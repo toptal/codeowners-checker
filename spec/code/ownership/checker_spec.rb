@@ -4,23 +4,23 @@ require 'fileutils'
 
 RSpec.describe Code::Ownership::Checker do
   subject { Code::Ownership::Checker.check! folder_name, from, to }
+  let(:folder_name) { 'project' }
   let(:from) { 'HEAD' }
   let(:to) { 'HEAD' }
   let(:git) { Git.open(folder_name, log: Logger.new(STDOUT)) }
-  let(:folder_name) { 'project' }
-
-  def on_project_folder
-    Dir.mkdir(folder_name) unless Dir.exist?(folder_name)
-    Dir.chdir(folder_name) do
-      yield
-    end
-  end
 
   def setup_project_folder
     on_project_folder do
       setup_code_owners
       setup_billing_domain
       setup_gemfile
+    end
+  end
+
+  def on_project_folder
+    Dir.mkdir(folder_name) unless Dir.exist?(folder_name)
+    Dir.chdir(folder_name) do
+      yield
     end
   end
 
@@ -54,14 +54,16 @@ RSpec.describe Code::Ownership::Checker do
     end
   end
 
-  let(:initial_repo) do
-    setup_project_folder
+  def setup_git_for_project
     Git.init(folder_name)
     git.add(all: true)
     git.commit('First commit :yay:')
   end
 
-  before { initial_repo }
+  before do
+    setup_project_folder
+    setup_git_for_project
+  end
 
   after do
     FileUtils.rm_r(folder_name)
@@ -90,6 +92,7 @@ RSpec.describe Code::Ownership::Checker do
                         ])
     end
   end
+
   context 'when removing a file from the git tree' do
     it 'should failure if do not remove reference lines from .github/CODEOWNERS'
   end
