@@ -1,0 +1,6 @@
+Metrics/BlockLength:
+  Path: spec/**
+  Enabled: false
+
+Metrics/LineLength:
+  Max: 120
