@@ -1,8 +1,7 @@
 # Code::Ownership::Checker
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/code/ownership/checker`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-TODO: Delete this and the text above, and describe your gem
+This gem checks if the github codeowners are specified to all files changes
+between two git revisions.
 
 ## Installation
 
@@ -22,7 +21,9 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+Code::Ownership::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
+```
 
 ## Development
 

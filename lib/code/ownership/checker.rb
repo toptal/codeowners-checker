@@ -6,12 +6,19 @@ require 'logger'
 
 module Code
   module Ownership
+    # Check code ownership is consistent between a git repository and
+    # .github/CODEOWNERS file.
+    # It can compare different what's being changed in the PR and check
+    # if the current files and folders are also being declared in the CODEOWNERS file.
     module Checker
       module_function
 
+      # Check some repo from a reference to another
       def check!(repo, from, to)
         GitChecker.new(repo, from, to).check!
       end
+
+      # Get repo metadata and compare with the owners
       class GitChecker
         def initialize(repo, from, to)
           @git = Git.open(repo, log: Logger.new(STDOUT))
@@ -38,14 +45,14 @@ module Code
         def check!
           errors = []
           added_files.each do |file|
-            next if have_ownership?(file)
+            next if defined_owner?(file)
 
             errors << "Missing #{file} to add to .github/CODEOWNERS"
           end
           { errors: errors }
         end
 
-        def have_ownership?(file)
+        def defined_owner?(file)
           owners.find do |pattern, _owner|
             pattern
               .gsub(/\*\*/, '(/[^/]+)+')
