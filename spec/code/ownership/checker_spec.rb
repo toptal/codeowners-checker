@@ -14,6 +14,7 @@ RSpec.describe Code::Ownership::Checker do
       setup_code_owners
       setup_billing_domain
       setup_gemfile
+      setup_rubocop
     end
   end
 
@@ -54,6 +55,19 @@ RSpec.describe Code::Ownership::Checker do
     end
   end
 
+  def setup_rubocop
+    File.open('.rubocop.yml', 'w+') do |file|
+      file.puts <<~CONTENT
+        Metrics/BlockLength:
+          Path: spec/**
+          Enabled: false
+
+        Metrics/LineLength:
+          Max: 120
+      CONTENT
+    end
+  end
+
   def setup_git_for_project
     Git.init(folder_name)
     git.add(all: true)
@@ -73,7 +87,7 @@ RSpec.describe Code::Ownership::Checker do
     it { is_expected.to eq(errors: []) }
   end
 
-  context 'when introduce a new file in the git tree' do
+  context 'when introducing a new file in the git tree' do
     before do
       on_project_folder do
         filename = 'lib/new_file.rb'
@@ -86,14 +100,55 @@ RSpec.describe Code::Ownership::Checker do
     end
 
     let(:from) { 'HEAD~1' }
-    it 'should failure if the fail is not mapped on .github/CODEOWNERS' do
+    it 'should fail if the file is not referenced in .github/CODEOWNERS' do
       is_expected.to eq(errors: [
                           'Missing lib/new_file.rb to add to .github/CODEOWNERS'
                         ])
     end
   end
 
-  context 'when removing a file from the git tree' do
-    it 'should failure if do not remove reference lines from .github/CODEOWNERS'
+  context 'when removing a file from the git tree without updating CODEOWNERS' do
+    before do
+      on_project_folder do
+        filename = '.rubocop.yml'
+        File.delete(filename)
+        git.add filename
+        git.commit('Deleted file .rubocop.yml')
+      end
+    end
+
+    it "should fail if referencing lines aren't removed from .github/CODEOWNERS" do
+      is_expected
+        .to eq(errors: ['No files matching pattern .rubocop.yml in .github/CODEOWNERS'])
+    end
+  end
+
+  context 'when removing a file from the git tree updating CODEOWNERS' do
+    before do
+      on_project_folder do
+        filename = '.rubocop.yml'
+        File.delete(filename)
+        git.add filename
+
+        # Update CODEOWNERS to remove reference...
+        contents = []
+        File.readlines('.github/CODEOWNERS') do |line|
+          contents.push(line) if /^\s*.rubocop.yml\s+/ !~ line
+        end
+
+        File.open('.github/CODEOWNERS', 'w') do |f|
+          contents.each do |line|
+            f.write line
+          end
+        end
+
+        git.add '.github/CODEOWNERS'
+        git.commit('Remove .rubocop.yml and update code owners')
+      end
+    end
+
+    it 'should not complain' do
+      is_expected.to eq(errors: [])
+    end
   end
 end

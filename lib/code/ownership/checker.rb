@@ -49,7 +49,17 @@ module Code
 
             errors << "Missing #{file} to add to .github/CODEOWNERS"
           end
+
+          owners.each do |pattern, _|
+            next if pattern_has_files(pattern)
+
+            errors << "No files matching pattern #{pattern} in .github/CODEOWNERS"
+          end
           { errors: errors }
+        end
+
+        def pattern_has_files(pattern)
+          @git.ls_files(pattern).any?
         end
 
         def defined_owner?(file)
@@ -64,7 +74,7 @@ module Code
 
         def owners
           @git
-            .gblob('master:.github/CODEOWNERS')
+            .gblob("#{@to}:.github/CODEOWNERS")
             .contents.lines.map(&:chomp)
             .map { |line| line.split(/\s+/) }
         end
