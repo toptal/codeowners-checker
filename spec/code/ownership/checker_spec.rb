@@ -29,6 +29,7 @@ RSpec.describe Code::Ownership::Checker do
     Dir.mkdir('.github')
     File.open('.github/CODEOWNERS', 'w+') do |file|
       file.puts <<~CONTENT
+        # comment ignored
         .rubocop.yml @jonatas
         Gemfile @toptal/rogue-one
         lib/billing/* @toptal/billing

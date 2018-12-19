@@ -1,5 +1,4 @@
 # frozen_string_literal: true
-
 require 'code/ownership/checker/version'
 require 'git'
 require 'logger'
@@ -64,20 +63,20 @@ module Code
 
         def defined_owner?(file)
           owners.find do |pattern, _owner|
-            next unless pattern  
-            pattern
+            next unless pattern
+            regex = pattern
               .gsub(/\*\*/, '(/[^/]+)+')
               .gsub(/\*/, '/[^/]+')
 
-            Regexp.new(pattern).match file
+            Regexp.new(regex).match file
           end
         end
 
         def owners
-          @git
+          @owners ||= @git
             .gblob("#{@to}:.github/CODEOWNERS")
             .contents.lines.map(&:chomp)
-            .reject { |line| line.blank? || line.match?(/^\s*#/)
+            .reject { |line| line.nil? || line.match?(/^\s*#/) }
             .map { |line| line.split(/\s+/) }
         end
       end
