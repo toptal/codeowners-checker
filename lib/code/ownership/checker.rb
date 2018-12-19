@@ -64,6 +64,7 @@ module Code
 
         def defined_owner?(file)
           owners.find do |pattern, _owner|
+            next unless pattern  
             pattern
               .gsub(/\*\*/, '(/[^/]+)+')
               .gsub(/\*/, '/[^/]+')
@@ -76,6 +77,7 @@ module Code
           @git
             .gblob("#{@to}:.github/CODEOWNERS")
             .contents.lines.map(&:chomp)
+            .reject { |line| line.blank? || line.match?(/^\s*#/)
             .map { |line| line.split(/\s+/) }
         end
       end
