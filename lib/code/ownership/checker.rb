@@ -64,9 +64,7 @@ module Code
 
         def defined_owner?(file)
           owners.find do |pattern, _owner|
-            if !pattern then 
-              return false 
-            end
+            next unless pattern  
             pattern
               .gsub(/\*\*/, '(/[^/]+)+')
               .gsub(/\*/, '/[^/]+')
