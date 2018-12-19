@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require 'code/ownership/checker/version'
 require 'git'
 require 'logger'
@@ -20,7 +21,7 @@ module Code
       # Get repo metadata and compare with the owners
       class GitChecker
         def initialize(repo, from, to)
-          @git = Git.open(repo, log: Logger.new(STDOUT))
+          @git = Git.open(repo, log: Logger.new(IO::NULL))
           @from = from
           @to = to
         end
@@ -42,19 +43,19 @@ module Code
         end
 
         def check!
-          errors = []
+          errors = { missing_ref: [], useless_pattern: [] }
           added_files.each do |file|
             next if defined_owner?(file)
 
-            errors << "Missing #{file} to add to .github/CODEOWNERS"
+            errors[:missing_ref] << file
           end
 
-          owners.each do |pattern, _|
-            next if pattern_has_files(pattern)
+          ownership.each do |row|
+            next if pattern_has_files(row.pattern)
 
-            errors << "No files matching pattern #{pattern} in .github/CODEOWNERS"
+            errors[:useless_pattern] << row
           end
-          { errors: errors }
+          errors
         end
 
         def pattern_has_files(pattern)
@@ -62,22 +63,27 @@ module Code
         end
 
         def defined_owner?(file)
-          owners.find do |pattern, _owner|
-            next unless pattern
-            regex = pattern
-              .gsub(/\*\*/, '(/[^/]+)+')
-              .gsub(/\*/, '/[^/]+')
-
-            Regexp.new(regex).match file
+          ownership.find do |row|
+            row.regex.match file
           end
         end
 
-        def owners
-          @owners ||= @git
-            .gblob("#{@to}:.github/CODEOWNERS")
-            .contents.lines.map(&:chomp)
-            .reject { |line| line.nil? || line.match?(/^\s*#/) }
-            .map { |line| line.split(/\s+/) }
+        Ownership = Struct.new(:pattern, :regex, :owners)
+        def ownership
+          @ownership ||= @git
+                         .gblob("#{@to}:.github/CODEOWNERS")
+                         .contents.lines.map(&:chomp)
+                         .reject { |line| line.nil? || line.match?(/^\s*#|^$/) }
+                         .map do |line|
+            head, *tail = line.split(/\s+/)
+            regex = pattern_to_regex(head)
+            Ownership.new head, regex, tail
+          end
+        end
+
+        def pattern_to_regex(str)
+          regex = str.gsub(%r{/\*\*}, '(/[^/]+)+').gsub(/\*/, '[^/]+')
+          Regexp.new(regex)
         end
       end
     end

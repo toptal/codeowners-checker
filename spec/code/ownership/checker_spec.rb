@@ -85,7 +85,7 @@ RSpec.describe Code::Ownership::Checker do
   end
 
   context 'without any changes it should not complain' do
-    it { is_expected.to eq(errors: []) }
+    it { is_expected.to eq(missing_ref: [], useless_pattern: []) }
   end
 
   context 'when introducing a new file in the git tree' do
@@ -102,9 +102,7 @@ RSpec.describe Code::Ownership::Checker do
 
     let(:from) { 'HEAD~1' }
     it 'should fail if the file is not referenced in .github/CODEOWNERS' do
-      is_expected.to eq(errors: [
-                          'Missing lib/new_file.rb to add to .github/CODEOWNERS'
-                        ])
+      is_expected.to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [])
     end
   end
 
@@ -119,8 +117,7 @@ RSpec.describe Code::Ownership::Checker do
     end
 
     it "should fail if referencing lines aren't removed from .github/CODEOWNERS" do
-      is_expected
-        .to eq(errors: ['No files matching pattern .rubocop.yml in .github/CODEOWNERS'])
+      expect(subject[:useless_pattern].first.pattern).to eq('.rubocop.yml')
     end
   end
 
@@ -149,7 +146,7 @@ RSpec.describe Code::Ownership::Checker do
     end
 
     it 'should not complain' do
-      is_expected.to eq(errors: [])
+      is_expected.to eq(missing_ref: [], useless_pattern: [])
     end
   end
 end
