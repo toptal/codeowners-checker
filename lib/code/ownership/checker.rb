@@ -18,6 +18,16 @@ module Code
         GitChecker.new(repo, from, to).check!
       end
 
+      class Ownership < Struct.new(:pattern, :owners, :line, :comments)
+        def regex
+          Regexp.new(pattern.gsub(%r{/\*\*}, '(/[^/]+)+').gsub(/\*/, '[^/]+'))
+        end
+
+        def to_s
+          [pattern, owners].join ' '
+        end
+      end
+
       # Get repo metadata and compare with the owners
       class GitChecker
         def initialize(repo, from, to)
@@ -68,22 +78,47 @@ module Code
           end
         end
 
-        Ownership = Struct.new(:pattern, :regex, :owners)
-        def ownership
-          @ownership ||= @git
-                         .gblob("#{@to}:.github/CODEOWNERS")
-                         .contents.lines.map(&:chomp)
-                         .reject { |line| line.nil? || line.match?(/^\s*#|^$/) }
-                         .map do |line|
-            head, *tail = line.split(/\s+/)
-            regex = pattern_to_regex(head)
-            Ownership.new head, regex, tail
-          end
+        def codeowners_raw_content
+          codeowners_file.contents.lines
         end
 
-        def pattern_to_regex(str)
-          regex = str.gsub(%r{/\*\*}, '(/[^/]+)+').gsub(/\*/, '[^/]+')
-          Regexp.new(regex)
+        def codeowners_file
+          @git.gblob("#{@to}:.github/CODEOWNERS")
+        end
+
+        def ownership
+          CodeOwnersFile.new(codeowners_raw_content).parse!
+        end
+      end
+
+      # Parse .github/CODEOWNERS into Ownership that is a
+      # Struct.new(:pattern, :regex, :owners, :line, :comments)
+      # It parses and attach previous comments to the content
+      # to allow us to rewrite the file in the future.
+      class CodeOwnersFile
+        def initialize content
+          @content = content
+          @owners = []
+          @comments = []
+        end
+
+        def parse!
+          @content.each_with_index do |line, i|
+            next if line.nil?
+            if line.match?(/^\s*#|^$/)
+               @comments << line
+               next
+            end
+            @line_number = i + 1
+            process_ownership line
+          end
+          @owners
+        end
+
+        def process_ownership line
+          pattern, *owners = line.chomp.split(/\s+/)
+          @owners << Ownership.new(pattern, owners, @line_number, @comments)
+          @comments = []
         end
       end
     end
