@@ -3,7 +3,8 @@
 require 'fileutils'
 
 RSpec.describe Code::Ownership::Checker do
-  subject { Code::Ownership::Checker.check! folder_name, from, to }
+  subject { described_class.check! folder_name, from, to }
+
   let(:folder_name) { 'project' }
   let(:from) { 'HEAD' }
   let(:to) { 'HEAD' }
@@ -101,8 +102,9 @@ RSpec.describe Code::Ownership::Checker do
     end
 
     let(:from) { 'HEAD~1' }
-    it 'should fail if the file is not referenced in .github/CODEOWNERS' do
-      is_expected.to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [])
+
+    it 'fails if the file is not referenced in .github/CODEOWNERS' do
+      expect(subject).to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [])
     end
   end
 
@@ -116,7 +118,7 @@ RSpec.describe Code::Ownership::Checker do
       end
     end
 
-    it "should fail if referencing lines aren't removed from .github/CODEOWNERS" do
+    it "fails if referencing lines aren't removed from .github/CODEOWNERS" do
       expect(subject[:useless_pattern].first.pattern).to eq('.rubocop.yml')
     end
   end
@@ -145,8 +147,8 @@ RSpec.describe Code::Ownership::Checker do
       end
     end
 
-    it 'should not complain' do
-      is_expected.to eq(missing_ref: [], useless_pattern: [])
+    it 'does not complain' do
+      expect(subject).to eq(missing_ref: [], useless_pattern: [])
     end
   end
 end

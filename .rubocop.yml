@@ -1,5 +1,19 @@
+require: rubocop-rspec
+
 Metrics/BlockLength:
   Enabled: false
 
 Metrics/LineLength:
   Max: 120
+
+Style/StructInheritance:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Enabled: false
+
+RSpec/NamedSubject:
+  Enabled: false
+
+RSpec/ExampleLength:
+  Enabled: false

@@ -9,6 +9,7 @@ RSpec.describe Code::Ownership::Record do
   describe '#to_row' do
     context 'with sample' do
       subject { described_class.new(*sample).to_row }
+
       it { is_expected.to eq(<<~OUTPUT.chomp) }
         # Linters
         .rubocop.yml @jonatas
@@ -17,6 +18,7 @@ RSpec.describe Code::Ownership::Record do
 
     context 'with multiple teams' do
       subject { described_class.new(*multiple_teams).to_row }
+
       it { is_expected.to eq(<<~OUTPUT.chomp) }
         # Libraries
         Gemfile @toptal/rogue-one @toptal/secops
@@ -25,6 +27,7 @@ RSpec.describe Code::Ownership::Record do
 
     context 'with patterns' do
       subject { described_class.new(*any_file_from_team).to_row }
+
       it { is_expected.to eq(<<~OUTPUT.chomp) }
         # Team specific
         # Billing Team
@@ -36,16 +39,19 @@ RSpec.describe Code::Ownership::Record do
   describe '#regex' do
     context 'with sample' do
       subject { described_class.new(*sample).regex }
+
       it { is_expected.to eq(/.rubocop.yml/) }
     end
 
     context 'with pattern for any file' do
       subject { described_class.new(*any_file_from_team).regex }
+
       it { is_expected.to eq(%r{lib/billing/[^/]+}) }
     end
 
     context 'with pattern for any folder' do
       subject { described_class.new(*any_folder_from_team).regex }
+
       it { is_expected.to eq(%r{lib/billing/[^/]+/[^/]+}) }
     end
   end

@@ -14,8 +14,9 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
 
   describe '#parse!' do
     subject { described_class.new(content).parse! }
+
     it 'returns a list of Ownership' do
-      is_expected.to be_a(Array)
+      expect(subject).to be_a(Array)
       expect(subject.first).to be_a(Code::Ownership::Record)
     end
 
@@ -39,7 +40,6 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
       billing_spec = subject[2]
       expect(billing_spec.comments).to match_array(['', '# Team related code', '# Billing related'])
       expect(billing_spec.pattern).to eq('lib/billing/*')
-      expect(billing_spec.regex).to eq(%r{lib/billing/[^/]+})
       expect(billing_spec.owners).to match_array(%w[@toptal/billing])
       expect(billing_spec.line).to eq(8)
     end
@@ -98,6 +98,7 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
 
   describe 'process_content!' do
     subject { described_class.new(content) }
+
     before  { subject.parse! }
 
     it 'changes content in memory' do
