@@ -2,7 +2,7 @@
 
 module Code
   module Ownership
-    module Checker
+    class Checker
       VERSION = '0.1.0'
     end
   end

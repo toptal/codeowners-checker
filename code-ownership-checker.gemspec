@@ -17,9 +17,10 @@ Gem::Specification.new do |spec|
     f.match(%r{^(test|spec|features)/})
   end
   spec.bindir        = 'exe'
-  spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
+  spec.executables   = spec.files.grep(%r{^bin\/code-owners-checker/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
+  spec.add_dependency 'fuzzy_match'
   spec.add_dependency 'git'
   spec.add_dependency 'thor'
   spec.add_development_dependency 'bundler', '~> 1.16'

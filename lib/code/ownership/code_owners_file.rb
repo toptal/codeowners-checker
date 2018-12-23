@@ -63,6 +63,7 @@ module Code
       end
 
       def process_content!
+        @owners.uniq!
         @content = @owners.map(&:to_row).join("\n")
       end
     end

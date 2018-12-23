@@ -131,10 +131,10 @@ RSpec.describe Code::Ownership::Checker do
         git.add filename
 
         # Update CODEOWNERS to remove reference...
-        contents = []
-        File.readlines('.github/CODEOWNERS') do |line|
-          contents.push(line) if /^\s*.rubocop.yml\s+/ !~ line
-        end
+        contents =
+          File.readlines('.github/CODEOWNERS').reject do |line|
+            line =~ /^\s*.rubocop.yml\s+/
+          end
 
         File.open('.github/CODEOWNERS', 'w') do |f|
           contents.each do |line|
