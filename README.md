@@ -5,21 +5,13 @@ between two git revisions.
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'code-ownership-checker'
-```
-
-And then execute:
-
-    $ bundle
-
-Or install it yourself as:
-
     $ gem install code-ownership-checker
 
 ## Usage
+
+    $  code-ownership-checker check .
+
+Or via code:
 
 ```ruby
 Code::Ownership::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
