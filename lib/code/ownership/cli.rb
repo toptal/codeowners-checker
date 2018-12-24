@@ -20,6 +20,18 @@ module Code
         @checker.when_useless_pattern do |record|
           suggest_fix_for record
         end
+
+=begin
+        # TODO
+        @checker.when_new_file do |file|
+          suggest_add_to_codeowners file
+        end
+
+        @checker.when_deleted_file do |file|
+          suggest_remove_from_codeowners file
+        end
+=end
+
         @checker.check!
         @checker.commit_changes! if yes?('Commit changes?')
       end
@@ -34,6 +46,8 @@ module Code
       end
 
       def apply_suggestion(record, suggestion)
+        # TODO
+        # introduce d to delete line and yes for suggestion
         return unless yes?("Pattern #{record.pattern} doesn't match. Replace with: #{suggestion}?")
 
         @checker.codeowners_file.update line: record.line, pattern: suggestion
