@@ -6,6 +6,7 @@ require 'code/ownership/code_owners_file'
 require 'git'
 require 'logger'
 require 'forwardable'
+require 'pry'
 
 module Code
   module Ownership
@@ -24,6 +25,7 @@ module Code
       # Get repo metadata and compare with the owners
       def initialize(repo, from, to)
         @git = Git.open(repo, log: Logger.new(IO::NULL))
+        @repo_dir = repo
         @from = from
         @to = to
       end
@@ -36,6 +38,14 @@ module Code
         changes_to_analyze.select { |_k, v| v == 'A' }.keys
       end
 
+      def deleted_files
+        changes_to_analyze.select { |_k, v| v == 'D' }.keys
+      end
+
+      def changed_files
+        changes_to_analyze.keys
+      end
+
       def master
         @git.object(@from)
       end
@@ -45,10 +55,33 @@ module Code
       end
 
       def check!
+        @ownership ||= codeowners_file.parse!
+        check_deleted_files
         {
           missing_ref: missing_reference,
           useless_pattern: useless_pattern
         }
+      end
+
+      def changes_for_patterns(patterns)
+        @git.diff(master, my_changes).path(patterns).name_status.keys
+      end
+
+      def changes_with_ownership(owner='')
+        patterns_by_owner = {}
+        ownership.each { |rec| rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern} }
+
+        if owner != ''
+          if patterns_by_owner.key?(owner)
+            return {owner => changes_for_patterns(patterns_by_owner[owner])}
+          else
+            return {}
+          end
+        end
+
+        changes_with_owners = {}
+        patterns_by_owner.keys.each {|own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
+        changes_with_owners
       end
 
       def useless_pattern
@@ -60,6 +93,11 @@ module Code
         end
       end
 
+      def check_deleted_files
+        return unless @when_deleted_file
+        deleted_files.each {|file| @when_deleted_file&.call(file)}
+      end
+
       def missing_reference
         added_files.reject(&method(:defined_owner?))
       end
@@ -69,8 +107,11 @@ module Code
       end
 
       def defined_owner?(file)
-        ownership.find do |row|
-          row.regex.match file
+        if ownership.find {|row| row.regex.match file}
+          true
+        else
+          if @when_new_file then @when_new_file&.call(file) end
+          false
         end
       end
 
@@ -88,6 +129,14 @@ module Code
 
       def when_useless_pattern(&block)
         @when_useless_pattern = block
+      end
+
+      def when_new_file(&block)
+        @when_new_file = block
+      end
+
+      def when_deleted_file(&block)
+        @when_deleted_file = block
       end
 
       def ownership

@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'pry'
+
 module Code
   module Ownership
     # Check code ownership is consistent between a git repository and
@@ -31,12 +33,17 @@ module Code
 
       def process_ownership(line)
         pattern, *owners = line.chomp.split(/\s+/)
+        pattern.sub!(/^\//, '')
         @owners << Code::Ownership::Record.new(pattern, owners, @line_number, @comments)
         @comments = []
       end
 
       def find_record(line:)
         @owners.find { |record| record.line == line }
+      end
+
+      def find_record_for_pattern(pattern:)
+        @owners.find { |record| record.pattern == pattern }
       end
 
       def update(line:, pattern: nil, owners: nil, comments: nil)
@@ -52,9 +59,14 @@ module Code
       def insert(after_line:, pattern: nil, owners: nil, comments: nil)
         index = @owners.index { |record| record.line == after_line }
 
-        raise "no patterns with line: #{line}" if index.nil?
+        raise "no patterns with line: #{after_line}" if index.nil?
 
         @owners.insert index, Code::Ownership::Record.new(pattern, owners, after_line + 1, comments)
+      end
+
+      def append(pattern:, owners:, comments: nil)
+        line = @owners.last.line
+        @owners.push Code::Ownership::Record.new(pattern, owners, line + 1, comments)
       end
 
       def delete(line:)
@@ -64,7 +76,7 @@ module Code
 
       def process_content!
         @owners.uniq!
-        @content = @owners.map(&:to_row).join("\n")
+        @content = @owners.map(&:to_row)
       end
     end
   end
