@@ -67,20 +67,21 @@ module Code
         @git.diff(master, my_changes).path(patterns).name_status.keys
       end
 
-      def changes_with_ownership(owner='')
-        patterns_by_owner = {}
-        ownership.each { |rec| rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern} }
-
-        if owner != ''
-          if patterns_by_owner.key?(owner)
-            return {owner => changes_for_patterns(patterns_by_owner[owner])}
-          else
-            return {}
+      def patterns_by_owner
+        unless @patterns_by_owner
+          @patterns_by_owner = {}
+          ownership.each do |rec|
+            rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern}
           end
         end
+        @patterns_by_owner
+      end
 
+      def changes_with_ownership(owner='')
         changes_with_owners = {}
-        patterns_by_owner.keys.each {|own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
+        patterns_by_owner.keys
+            .select {|o| o == owner || owner == ''}
+            .each {|own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
         changes_with_owners
       end
 

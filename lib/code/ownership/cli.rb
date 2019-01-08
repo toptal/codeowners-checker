@@ -77,34 +77,6 @@ module Code
       def checker
         @checker ||= Code::Ownership::Checker.new(@repo_base_path, options[:from], options[:to])
       end
-
-      def files_for_patterns(patterns)
-        files = `git ls-files #{patterns.join(' ')}`.split('\n')
-        files << `git ls-files -d #{patterns.join(' ')}`.split('\n')
-
-      end
-
-      def branch
-        if !@current_branch
-          @current_branch = options[:branch]
-          if !@current_branch
-            @current_branch = `git rev-parse --abbrev-ref HEAD`
-            raise "Cannot use branch master, please specify or checkout a branch" if @current_branch == "master"
-          end
-          @current_branch = 'origin/' + @current_branch unless options[:local]
-        end
-        @current_branch
-      end
-
-      def master
-        @master_branch ||= options[:local] ? 'master' : 'origin/master'
-      end
-
-      def changed_files
-        merge_base = `git merge-base #{branch} #{master}`
-        `git diff --name-only #{branch} #{merge_base}`
-      end
-
     end
 
     # Command Line Interface used by bin/code-owners-checker.
