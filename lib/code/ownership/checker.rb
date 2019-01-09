@@ -69,17 +69,17 @@ module Code
         unless @patterns_by_owner
           @patterns_by_owner = {}
           ownership.each do |rec|
-            rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern}
+            rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern }
           end
         end
         @patterns_by_owner
       end
 
-      def changes_with_ownership(owner='')
+      def changes_with_ownership(owner = '')
         changes_with_owners = {}
         patterns_by_owner.keys
-            .select {|o| o == owner || owner == ''}
-            .each {|own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
+                         .select { |o| o == owner || owner == '' }
+                         .each { |own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
         changes_with_owners
       end
 
@@ -94,7 +94,8 @@ module Code
 
       def check_deleted_files
         return unless @when_deleted_file
-        deleted_files.each {|file| @when_deleted_file&.call(file)}
+
+        deleted_files.each { |file| @when_deleted_file&.call(file) }
       end
 
       def missing_reference
@@ -106,10 +107,10 @@ module Code
       end
 
       def defined_owner?(file)
-        if ownership.find {|row| row.regex.match file}
+        if ownership.find { |row| row.regex.match file }
           true
         else
-          if @when_new_file then @when_new_file&.call(file) end
+          @when_new_file&.call(file) if @when_new_file
           false
         end
       end

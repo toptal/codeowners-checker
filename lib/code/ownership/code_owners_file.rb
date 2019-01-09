@@ -31,7 +31,7 @@ module Code
 
       def process_ownership(line)
         pattern, *owners = line.chomp.split(/\s+/)
-        pattern.sub!(/^\//, '')
+        pattern.sub!(%r{^/}, '')
         @owners << Code::Ownership::Record.new(pattern, owners, @line_number, @comments)
         @comments = []
       end
