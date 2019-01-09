@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'pry'
-
 module Code
   module Ownership
     # Check code ownership is consistent between a git repository and

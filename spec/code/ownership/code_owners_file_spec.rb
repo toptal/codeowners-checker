@@ -105,7 +105,7 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
       subject.update line: 2, pattern: '.rubocop*', owners: %w[@other]
       subject.update line: 4, owners: %w[@toptal/secops]
       subject.update line: 8, comments: ['# Billing related']
-      expect(subject.process_content!).to eq(<<~CONTENT.chomp)
+      expect(subject.process_content!.join("\n")).to eq(<<~CONTENT.chomp)
         # Linters
         .rubocop* @other
         # Libraries

@@ -18,15 +18,6 @@ module Code
      # option :local, default: false, type: :boolean, aliases: '-l'
      # option :branch, default: '', aliases: '-b'
       def by_team(team='')
-        if (team == '')
-          if not File.exists? @default_team_file
-            puts "Team name should be specified or a default team defined"
-            return
-          end
-          team = File.read(@default_team_file)
-
-        end
-        team_name = "@toptal/" + team
         changes = checker.changes_with_ownership(team_name)
         if changes.key?(team_name)
           changes.values.each {|file| puts file}
@@ -56,10 +47,6 @@ module Code
         end
       end
 
-      desc 'set_default_team TEAM', 'Set default in .default_team to TEAM'
-      def set_default_team(team)
-        File.write(@repo_base_path + '/.default_team', team)
-      end
 
       def initialize(args = [], options = {}, config = {})
         super
@@ -69,7 +56,6 @@ module Code
         end
         @repo_base_path.chomp!
         Dir.chdir(@repo_base_path)
-        @default_team_file = @repo_base_path + '/.default_team'
       end
 
       private
@@ -81,6 +67,14 @@ module Code
 
     # Command Line Interface used by bin/code-owners-checker.
     class CLI < Thor
+
+      attr_reader :default_team_file
+      def initialize *args
+        super
+        @repo_base_path = `git rev-parse --show-toplevel`.chomp
+        @default_team_file = @repo_base_path + '/.default_team'
+      end
+
 
       LABEL = { missing_ref: 'Missing references', useless_pattern: 'No files matching with the pattern' }.freeze
       option :from, default: 'origin/master'
@@ -109,7 +103,38 @@ module Code
       desc "changes SUBCOMMAND", "List owners of changed files"
       subcommand "changes", Code::Ownership::ChangesByOwner
 
+
+      desc 'config', 'Checks config is consistent or configure it'
+      option :team
+      def config
+        return unless validate_team_file && validate_team_options
+        save_team if options[:team]
+        team = IO.read(@default_team_file)
+        team_name = "@toptal/" + team
+        puts "configured: #{team_name}"
+      end
+
       private
+      def save_team
+        File.open(@default_team_file, 'w+') {|file| file.puts options[:team] }
+      end
+
+      def validate_team_options
+        return true unless options[:team]
+        if options[:team] == 'team'
+          puts "Please provide a team name.",
+            "Use #{$0} --team <team-name>"
+          return false
+        end
+        true
+      end
+
+      def validate_team_file
+        return true if File.exists?(@default_team_file) || options[:team]
+        puts "Team name should be specified or a default team defined",
+          "Try `#{$0} --team <team-name>` to configure the team."
+        false
+      end
 
       def write_codeowners_file
         File.open(@repo + '/' + Code::Ownership::Checker::FILE_LOCATION, 'w+') do |f|
