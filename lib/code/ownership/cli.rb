@@ -3,7 +3,6 @@
 require 'thor'
 require 'fuzzy_match'
 require_relative 'checker'
-require 'pry'
 
 # frozen_string_literal: true
 module Code

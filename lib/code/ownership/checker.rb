@@ -5,8 +5,6 @@ require 'code/ownership/record'
 require 'code/ownership/code_owners_file'
 require 'git'
 require 'logger'
-require 'forwardable'
-require 'pry'
 
 module Code
   module Ownership
@@ -68,20 +66,21 @@ module Code
       end
 
       def patterns_by_owner
-        @patterns_by_owner ||=
-          begin
-            Hash.new { |h, k| h[k] = [] }.tap do |patterns_by_owner|
-              ownership.each { |rec| rec.owners.each { |owner| patterns_by_owner[owner] << rec.pattern} }
-            end
+        unless @patterns_by_owner
+          @patterns_by_owner = {}
+          ownership.each do |rec|
+            rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern}
           end
+        end
+        @patterns_by_owner
       end
 
       def changes_with_ownership(owner='')
-        owners = patterns_by_owner.keys
-        owners.select! {|o| o == owner } if owner != ''
-        owners.each_with_object({}) do |own, changes|
-          changes[own] = changes_for_patterns(patterns_by_owner[own])
-        end
+        changes_with_owners = {}
+        patterns_by_owner.keys
+            .select {|o| o == owner || owner == ''}
+            .each {|own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
+        changes_with_owners
       end
 
       def useless_pattern
@@ -99,9 +98,7 @@ module Code
       end
 
       def missing_reference
-        missing = added_files.reject(&method(:defined_owner?))
-        missing.each(&@when_new_file) if @when_new_file
-        missing
+        added_files.reject(&method(:defined_owner?))
       end
 
       def pattern_has_files(pattern)
@@ -109,7 +106,12 @@ module Code
       end
 
       def defined_owner?(file)
-        ownership.any?{|row| row.regex.match file}
+        if ownership.find {|row| row.regex.match file}
+          true
+        else
+          if @when_new_file then @when_new_file&.call(file) end
+          false
+        end
       end
 
       def codeowners_raw_content
