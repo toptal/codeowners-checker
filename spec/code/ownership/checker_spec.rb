@@ -151,4 +151,48 @@ RSpec.describe Code::Ownership::Checker do
       expect(subject).to eq(missing_ref: [], useless_pattern: [])
     end
   end
+
+  describe '.patterns_by_owner' do
+    subject { described_class.new folder_name, from, to }
+
+    it 'collets patterns grouped by owner' do
+      expect(subject.patterns_by_owner)
+        .to eq(
+          '@jonatas' => ['.rubocop.yml'],
+          '@toptal/billing' => ['lib/billing/*'],
+          '@toptal/rogue-one' => ['Gemfile']
+        )
+    end
+  end
+
+  describe '.changes_with_ownership' do
+    subject { described_class.new folder_name, from, to }
+
+    it 'collets changes from a specific team' do
+      expect(subject.changes_with_ownership)
+        .to eq('@jonatas' => [], '@toptal/billing' => [], '@toptal/rogue-one' => [])
+    end
+    context 'when passing a specific owner' do
+      it do
+        expect(subject.changes_with_ownership('jonatas')).to be_empty
+      end
+    end
+
+    context 'when changing files from a specific owner' do
+      let(:from) { 'HEAD~1' }
+
+      before do
+        on_project_folder do
+          filename = '.rubocop.yml'
+          File.open(filename, 'a+') { |f| f.puts '# useless line' }
+          git.add filename
+          git.commit('Updated .rubocop.yml with useless content')
+        end
+      end
+
+      it do
+        expect(subject.changes_with_ownership('@jonatas')).to eq('@jonatas' => ['.rubocop.yml'])
+      end
+    end
+  end
 end

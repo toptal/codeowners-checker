@@ -66,21 +66,20 @@ module Code
       end
 
       def patterns_by_owner
-        unless @patterns_by_owner
-          @patterns_by_owner = {}
-          ownership.each do |rec|
-            rec.owners.each { |owner| patterns_by_owner[owner] = (patterns_by_owner[owner] || []) << rec.pattern }
+        @patterns_by_owner ||=
+          begin
+            ownership.each_with_object(Hash.new { |h, k| h[k] = [] }) do |rec, patterns_by_owner|
+              rec.owners.each { |owner| patterns_by_owner[owner] << rec.pattern }
+            end
           end
-        end
-        @patterns_by_owner
       end
 
       def changes_with_ownership(owner = '')
-        changes_with_owners = {}
-        patterns_by_owner.keys
-                         .select { |o| o == owner || owner == '' }
-                         .each { |own| changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own]) }
-        changes_with_owners
+        array = patterns_by_owner.keys
+        array.select! { |o| o == owner } if owner != ''
+        array.each_with_object({}) do |own, changes_with_owners|
+          changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own])
+        end
       end
 
       def useless_pattern
