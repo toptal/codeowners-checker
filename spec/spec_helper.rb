@@ -2,6 +2,7 @@
 
 require 'bundler/setup'
 require 'code/ownership/checker'
+require 'code/ownership/cli'
 require 'code/ownership/record'
 require 'code/ownership/code_owners_file'
 

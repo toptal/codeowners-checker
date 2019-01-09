@@ -9,6 +9,7 @@ between two git revisions.
 
 ## Usage
 
+
     $  code-ownership-checker check .
 
 Or via code:
@@ -16,6 +17,31 @@ Or via code:
 ```ruby
 Code::Ownership::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
 ```
+### Configure
+
+    $  code-ownership-checker config --team bootcamp
+
+It will configure a `.default_team` file with your `@toptal/bootcamp` team.
+
+### Check file consistency
+
+To check if your codeowners is consistent with your current project you can run
+this check.
+
+    $  code-ownership-checker check
+
+It will suggest files that need to be added or removed to the codeowners file. 
+
+### Changes
+
+If you have a Pull Request to review and you just want to check the changes that
+make sense for your team, you can also filter the changes:
+
+    $  code-ownership-checker changes all
+
+It will use the default team file or you can pass the team as a parameter:
+
+    $  code-ownership-checker changes by_team bootcamp
 
 ## Development
 

@@ -14,6 +14,7 @@ RSpec.describe Code::Ownership::Checker do
     on_project_folder do
       setup_code_owners
       setup_billing_domain
+      setup_shared_domain
       setup_gemfile
       setup_rubocop
     end
@@ -34,6 +35,7 @@ RSpec.describe Code::Ownership::Checker do
         .rubocop.yml @jonatas
         Gemfile @toptal/rogue-one
         lib/billing/* @toptal/billing
+        lib/shared/* @toptal/billing @toptal/rogue-one
       CONTENT
     end
   end
@@ -43,6 +45,15 @@ RSpec.describe Code::Ownership::Checker do
     File.open('lib/billing/file.rb', 'w+') do |file|
       file.puts <<~CONTENT
         # TODO: something not useful here
+      CONTENT
+    end
+  end
+
+  def setup_shared_domain
+    FileUtils.mkdir_p('lib/shared')
+    File.open('lib/shared/file.rb', 'w+') do |file|
+      file.puts <<~CONTENT
+        # TODO: some file that multiple teams share
       CONTENT
     end
   end
@@ -149,6 +160,69 @@ RSpec.describe Code::Ownership::Checker do
 
     it 'does not complain' do
       expect(subject).to eq(missing_ref: [], useless_pattern: [])
+    end
+  end
+
+  describe '.patterns_by_owner' do
+    subject { described_class.new folder_name, from, to }
+
+    it 'collets patterns grouped by owner' do
+      expect(subject.patterns_by_owner)
+        .to eq(
+          '@jonatas' => ['.rubocop.yml'],
+          '@toptal/billing' => ['lib/billing/*', 'lib/shared/*'],
+          '@toptal/rogue-one' => ['Gemfile', 'lib/shared/*']
+        )
+    end
+  end
+
+  describe '.changes_with_ownership' do
+    subject { described_class.new folder_name, from, to }
+
+    it 'collets changes from a specific team' do
+      expect(subject.changes_with_ownership)
+        .to eq('@jonatas' => [], '@toptal/billing' => [], '@toptal/rogue-one' => [])
+    end
+    context 'when passing a specific owner' do
+      it do
+        expect(subject.changes_with_ownership('jonatas')).to be_empty
+      end
+    end
+
+    context 'when changing files from a specific owner' do
+      let(:from) { 'HEAD~1' }
+
+      before do
+        on_project_folder do
+          filename = '.rubocop.yml'
+          File.open(filename, 'a+') { |f| f.puts '# useless line' }
+          git.add filename
+          git.commit('Updated .rubocop.yml with useless content')
+        end
+      end
+
+      it do
+        expect(subject.changes_with_ownership('@jonatas')).to eq('@jonatas' => ['.rubocop.yml'])
+      end
+    end
+    context 'when changing files from multiple owners' do
+      let(:from) { 'HEAD~1' }
+
+      before do
+        on_project_folder do
+          filename = 'lib/shared/file.rb'
+          File.open(filename, 'a+') { |f| f.puts '# useless line' }
+          git.add filename
+          git.commit('Updated shared file')
+        end
+      end
+
+      specify do
+        changes_from = subject.method(:changes_with_ownership)
+        expect(changes_from['@jonatas']).to eq('@jonatas' => [])
+        expect(changes_from['@toptal/rogue-one']).to eq('@toptal/rogue-one' => ["lib/shared/file.rb"])
+        expect(changes_from['@toptal/billing']).to eq('@toptal/billing' => ["lib/shared/file.rb"])
+      end
     end
   end
 end
