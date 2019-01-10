@@ -16,8 +16,8 @@ Gem::Specification.new do |spec|
   spec.files = `git ls-files -z`.split("\x0").reject do |f|
     f.match(%r{^(test|spec|features)/})
   end
-  spec.bindir        = 'exe'
-  spec.executables   = spec.files.grep(%r{^bin\/code-owners-checker/}) { |f| File.basename(f) }
+  spec.bindir        = 'bin'
+  spec.executables   = ['code-owners-checker']
   spec.require_paths = ['lib']
 
   spec.add_dependency 'fuzzy_match'
