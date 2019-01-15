@@ -21,7 +21,7 @@ RSpec.describe Code::Ownership::CLI do
     context 'when I have the file configured' do
       before do
         File.open(cli.default_team_file, 'w+') do |file|
-          file.puts 'bootcamp'
+          file.puts '@toptal/bootcamp'
         end
       end
 

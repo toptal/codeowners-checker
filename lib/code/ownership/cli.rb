@@ -14,7 +14,15 @@ module Code
       desc 'by_team [TEAM]', 'Lists changed files owned by TEAM. If no team is specified, default team is taken from .default_team'
       # option :local, default: false, type: :boolean, aliases: '-l'
       # option :branch, default: '', aliases: '-b'
-      def by_team(team_name = '')
+      def by_team(team_name = nil)
+        team_name ||= default_team
+
+        unless team_name
+          puts 'Please provide a team name or configure a default team.',
+          "Try `#{$PROGRAM_NAME} --team <team-name>` to configure the team."
+          return
+        end
+
         changes = checker.changes_with_ownership(team_name)
         if changes.key?(team_name)
           changes.values.each { |file| puts file }
@@ -47,6 +55,7 @@ module Code
       def initialize(args = [], options = {}, config = {})
         super
         @repo_base_path = `git rev-parse --show-toplevel`
+        @default_team_file = @repo_base_path.chomp + '/.default_team'
         if !@repo_base_path || @repo_base_path.empty?
           raise 'You must be positioned in a git repository to use this tool'
         end
@@ -59,6 +68,12 @@ module Code
 
       def checker
         @checker ||= Code::Ownership::Checker.new(@repo_base_path, options[:from], options[:to])
+      end
+
+      def default_team
+        return unless File.exist?(@default_team_file)
+
+        IO.read(@default_team_file).chomp
       end
     end
 
@@ -104,15 +119,15 @@ module Code
         return unless validate_team_file && validate_team_options
 
         save_team if options[:team]
-        team = IO.read(@default_team_file)
-        team_name = '@toptal/' + team
+        team_name = IO.read(@default_team_file)
         puts "configured: #{team_name}"
       end
 
       private
 
       def save_team
-        File.open(@default_team_file, 'w+') { |file| file.puts options[:team] }
+        team_name = '@toptal/' + options[:team]
+        File.open(@default_team_file, 'w+') { |file| file.puts team_name }
       end
 
       def validate_team_options
