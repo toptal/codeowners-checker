@@ -55,4 +55,32 @@ RSpec.describe Code::Ownership::Record do
       it { is_expected.to eq(%r{lib/billing/[^/]+/[^/]+}) }
     end
   end
+
+  describe '#suggest_files_for_pattern' do
+    context 'when passing sample file in the root folder.' do
+      subject { described_class.new(*sample).suggest_files_for_pattern }
+
+      it 'picks the current files in the folder' do
+        expect(subject).to eq(Dir['*'])
+      end
+    end
+
+    context 'when passing a folder with multiple *' do
+      subject { described_class.new(*any_folder_from_team).suggest_files_for_pattern }
+
+      it 'picks all files from parent folder of the pattern' do
+        allow(Dir).to receive('[]').with('lib/billing/*')
+        subject
+      end
+    end
+
+    context 'when pattern have a star' do
+      subject { described_class.new(*any_file_from_team).suggest_files_for_pattern }
+
+      it 'picks all files from parent folder of the pattern' do
+        allow(Dir).to receive('[]').with('lib/billing/*')
+        subject
+      end
+    end
+  end
 end

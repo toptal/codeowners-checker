@@ -83,7 +83,7 @@ module Code
 
       def suggest_fix_for(record)
         pattern = record.pattern
-        search = FuzzyMatch.new(files_from(pattern))
+        search = FuzzyMatch.new(record.suggest_files_for_pattern)
         suggestion = search.find(pattern)
         apply_suggestion(record, suggestion) if suggestion
       end
@@ -107,11 +107,6 @@ module Code
           @checker.codeowners_file.delete line: record.line
         end
         write_codeowners_file
-      end
-
-      def files_from(pattern)
-        parent_pattern = pattern.split('/')[0..-2].join('/')
-        Dir[@repo + parent_pattern + '/*'].map { |f| f.gsub(@repo, '') }
       end
     end
   end
