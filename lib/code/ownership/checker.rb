@@ -20,7 +20,7 @@ module Code
 
       FILE_LOCATION = '.github/CODEOWNERS'
 
-      attr_accessor :when_useless_pattern, :when_new_file, :when_deleted_file
+      attr_accessor :when_useless_pattern, :when_new_file
       # Get repo metadata and compare with the owners
       def initialize(repo, from, to)
         @git = Git.open(repo, log: Logger.new(IO::NULL))
@@ -37,10 +37,6 @@ module Code
         changes_to_analyze.select { |_k, v| v == 'A' }.keys
       end
 
-      def deleted_files
-        changes_to_analyze.select { |_k, v| v == 'D' }.keys
-      end
-
       def changed_files
         changes_to_analyze.keys
       end
@@ -55,7 +51,6 @@ module Code
 
       def check!
         @ownership ||= codeowners_file.parse!
-        check_deleted_files
         {
           missing_ref: missing_reference,
           useless_pattern: useless_pattern
@@ -92,12 +87,6 @@ module Code
             true
           end
         end
-      end
-
-      def check_deleted_files
-        return unless @when_deleted_file
-
-        deleted_files.each { |file| @when_deleted_file&.call(file) }
       end
 
       def missing_reference

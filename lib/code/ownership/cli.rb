@@ -46,10 +46,6 @@ module Code
         @checker.when_new_file = lambda do |file|
           suggest_add_to_codeowners file
         end
-
-        @checker.when_deleted_file = lambda do |file|
-          suggest_remove_from_codeowners file
-        end
       end
 
       def save_team
@@ -82,15 +78,6 @@ module Code
         return if owner.nil? || owner.empty?
 
         @checker.codeowners_file.append pattern: file, owners: owner
-        write_codeowners_file
-      end
-
-      def suggest_remove_from_codeowners(file)
-        record = @checker.codeowners_file.find_record_for_pattern pattern: file
-        return unless record
-        return unless yes?("File deleted: #{file}. Remove corresponding pattern from CODEOWNERS?")
-
-        @checker.codeowners_file.delete line: record.line
         write_codeowners_file
       end
 
