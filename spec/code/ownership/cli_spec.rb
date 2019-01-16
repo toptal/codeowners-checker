@@ -33,12 +33,12 @@ RSpec.describe Code::Ownership::CLI do
     end
 
     context 'when config receives the team option argument' do
-      let(:options) { { team: 'blacksmiths' } }
+      let(:options) { { team: '@toptal/bootcamp' } }
 
       it 'allow config a new team with the team parameter' do
         expect do
           cli.config
-        end.to output("default team: @toptal/blacksmiths\n").to_stdout
+        end.to output("default team: @toptal/bootcamp\n").to_stdout
       end
     end
 

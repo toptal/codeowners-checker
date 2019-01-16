@@ -19,7 +19,7 @@ Code::Ownership::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
 ```
 ### Configure
 
-    $  code-ownership-checker config --team bootcamp
+    $  code-ownership-checker config --team @toptal/bootcamp
 
 It will configure a `.default_team` file with your `@toptal/bootcamp` team.
 

@@ -49,8 +49,7 @@ module Code
       end
 
       def save_team
-        team_name = '@toptal/' + options[:team]
-        File.open(default_team_file, 'w+') { |file| file.puts team_name }
+        File.open(default_team_file, 'w+') { |file| file.puts options[:team] }
       end
 
       def validate_team_options
