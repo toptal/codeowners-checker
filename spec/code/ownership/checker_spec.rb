@@ -205,6 +205,7 @@ RSpec.describe Code::Ownership::Checker do
         expect(subject.changes_with_ownership('@jonatas')).to eq('@jonatas' => ['.rubocop.yml'])
       end
     end
+
     context 'when changing files from multiple owners' do
       let(:from) { 'HEAD~1' }
 
@@ -220,8 +221,8 @@ RSpec.describe Code::Ownership::Checker do
       specify do
         changes_from = subject.method(:changes_with_ownership)
         expect(changes_from['@jonatas']).to eq('@jonatas' => [])
-        expect(changes_from['@toptal/rogue-one']).to eq('@toptal/rogue-one' => ["lib/shared/file.rb"])
-        expect(changes_from['@toptal/billing']).to eq('@toptal/billing' => ["lib/shared/file.rb"])
+        expect(changes_from['@toptal/rogue-one']).to eq('@toptal/rogue-one' => ['lib/shared/file.rb'])
+        expect(changes_from['@toptal/billing']).to eq('@toptal/billing' => ['lib/shared/file.rb'])
       end
     end
   end

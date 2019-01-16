@@ -20,6 +20,7 @@ module Code
 
       FILE_LOCATION = '.github/CODEOWNERS'
 
+      attr_accessor :when_useless_pattern, :when_new_file, :when_deleted_file
       # Get repo metadata and compare with the owners
       def initialize(repo, from, to)
         @git = Git.open(repo, log: Logger.new(IO::NULL))
@@ -67,18 +68,20 @@ module Code
 
       def patterns_by_owner
         @patterns_by_owner ||=
-          begin
-            ownership.each_with_object(Hash.new { |h, k| h[k] = [] }) do |rec, patterns_by_owner|
-              rec.owners.each { |owner| patterns_by_owner[owner] << rec.pattern }
-            end
+          ownership.each_with_object(hash_of_arrays) do |rec, patterns_by_owner|
+            rec.owners.each { |owner| patterns_by_owner[owner] << rec.pattern }
           end
       end
 
+      def hash_of_arrays
+        Hash.new { |h, k| h[k] = [] }
+      end
+
       def changes_with_ownership(owner = '')
-        array = patterns_by_owner.keys
-        array.select! { |o| o == owner } if owner != ''
-        array.each_with_object({}) do |own, changes_with_owners|
-          changes_with_owners[own] = changes_for_patterns(patterns_by_owner[own])
+        patterns_by_owner.each_with_object({}) do |(own, patterns), changes_with_owners|
+          next if (owner != '') && (own != owner)
+
+          changes_with_owners[own] = changes_for_patterns(patterns)
         end
       end
 
@@ -124,18 +127,6 @@ module Code
 
       def codeowners_file
         @codeowners_file ||= CodeOwnersFile.new(codeowners_raw_content)
-      end
-
-      def when_useless_pattern(&block)
-        @when_useless_pattern = block
-      end
-
-      def when_new_file(&block)
-        @when_new_file = block
-      end
-
-      def when_deleted_file(&block)
-        @when_deleted_file = block
       end
 
       def ownership

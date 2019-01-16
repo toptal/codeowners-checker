@@ -3,74 +3,14 @@
 require 'thor'
 require 'fuzzy_match'
 require_relative 'checker'
+require_relative 'filter'
+require_relative 'cli_base'
 
 # frozen_string_literal: true
 module Code
   module Ownership
-    class ChangesByOwner < Thor
-      option :from, default: 'origin/master'
-      option :to, default: 'HEAD'
-      option :verbose, default: false, type: :boolean, aliases: '-v'
-      desc 'by_team [TEAM]', 'Lists changed files owned by TEAM. If no team is specified, default team is taken from .default_team'
-      # option :local, default: false, type: :boolean, aliases: '-l'
-      # option :branch, default: '', aliases: '-b'
-      def by_team(team_name = '')
-        changes = checker.changes_with_ownership(team_name)
-        if changes.key?(team_name)
-          changes.values.each { |file| puts file }
-        else
-          puts "Owner #{team_name} not defined in .github/CODEOWNERS"
-        end
-      end
-
-      option :from, default: 'origin/master'
-      option :to, default: 'HEAD'
-      option :verbose, default: false, type: :boolean, aliases: '-v'
-      desc 'by_team USER', 'Lists changed files owned by USER'
-      def by_user(user)
-        checker.changes_with_ownership { |rec| rec.owners.find { |owner| owner == '@' + user } }.each do |rec|
-          puts rec.owner + ":\n  " + rec.changes.join("\n  ") + "\n\n"
-        end
-      end
-
-      option :from, default: 'origin/master'
-      option :to, default: 'HEAD'
-      option :verbose, default: false, type: :boolean, aliases: '-v'
-      desc 'all', 'Lists all changed files grouped by owner'
-      def all
-        changes = checker.changes_with_ownership.select { |_owner, val| val && !val.empty? }
-        changes.keys.each do |owner|
-          puts(owner + ":\n  " + changes[owner].join("\n  ") + "\n\n")
-        end
-      end
-
-      def initialize(args = [], options = {}, config = {})
-        super
-        @repo_base_path = `git rev-parse --show-toplevel`
-        if !@repo_base_path || @repo_base_path.empty?
-          raise 'You must be positioned in a git repository to use this tool'
-        end
-
-        @repo_base_path.chomp!
-        Dir.chdir(@repo_base_path)
-      end
-
-      private
-
-      def checker
-        @checker ||= Code::Ownership::Checker.new(@repo_base_path, options[:from], options[:to])
-      end
-    end
-
     # Command Line Interface used by bin/code-owners-checker.
-    class CLI < Thor
-      attr_reader :default_team_file
-      def initialize(*args)
-        super
-        @repo_base_path = `git rev-parse --show-toplevel`.chomp
-        @default_team_file = @repo_base_path + '/.default_team'
-      end
-
+    class CLI < CLIBase
       LABEL = { missing_ref: 'Missing references', useless_pattern: 'No files matching with the pattern' }.freeze
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
@@ -78,25 +18,13 @@ module Code
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       def check(repo = '.')
         @repo = repo
-        @checker = Code::Ownership::Checker.new(@repo, options[:from], options[:to])
-        @checker.when_useless_pattern do |record|
-          suggest_fix_for record
-        end
-
-        @checker.when_new_file do |file|
-          suggest_add_to_codeowners file
-        end
-
-        @checker.when_deleted_file do |file|
-          suggest_remove_from_codeowners file
-        end
-
+        setup_checker
         @checker.check!
         @checker.commit_changes! if options[:interactive] && yes?('Commit changes?')
       end
 
-      desc 'changes SUBCOMMAND', 'List owners of changed files'
-      subcommand 'changes', Code::Ownership::ChangesByOwner
+      desc 'filter <by-owner>', 'List owners of changed files'
+      subcommand 'filter', Code::Ownership::Filter
 
       desc 'config', 'Checks config is consistent or configure it'
       option :team
@@ -104,34 +32,37 @@ module Code
         return unless validate_team_file && validate_team_options
 
         save_team if options[:team]
-        team = IO.read(@default_team_file)
-        team_name = '@toptal/' + team
-        puts "configured: #{team_name}"
+        puts "default team: #{default_team}"
       end
 
       private
 
+      def setup_checker
+        @checker = Code::Ownership::Checker.new(@repo, options[:from], options[:to])
+        @checker.when_useless_pattern = lambda do |record|
+          suggest_fix_for record
+        end
+
+        @checker.when_new_file = lambda do |file|
+          suggest_add_to_codeowners file
+        end
+
+        @checker.when_deleted_file = lambda do |file|
+          suggest_remove_from_codeowners file
+        end
+      end
+
       def save_team
-        File.open(@default_team_file, 'w+') { |file| file.puts options[:team] }
+        team_name = '@toptal/' + options[:team]
+        File.open(default_team_file, 'w+') { |file| file.puts team_name }
       end
 
       def validate_team_options
         return true unless options[:team]
 
-        if options[:team] == 'team'
-          puts 'Please provide a team name.',
-               "Use #{$PROGRAM_NAME} --team <team-name>"
-          return false
-        end
+        return banner_how_to_config_team if options[:team] == 'team'
+
         true
-      end
-
-      def validate_team_file
-        return true if File.exist?(@default_team_file) || options[:team]
-
-        puts 'Team name should be specified or a default team defined',
-             "Try `#{$PROGRAM_NAME} --team <team-name>` to configure the team."
-        false
       end
 
       def write_codeowners_file
@@ -148,20 +79,19 @@ module Code
 
         owner = ask('File owner(s): ')
 
-        if owner && !owner.empty?
-          @checker.codeowners_file.append pattern: file, owners: owner
-          write_codeowners_file
-        end
+        return if owner.nil? || owner.empty?
+
+        @checker.codeowners_file.append pattern: file, owners: owner
+        write_codeowners_file
       end
 
       def suggest_remove_from_codeowners(file)
         record = @checker.codeowners_file.find_record_for_pattern pattern: file
-        if record
-          return unless yes?("File deleted: #{file}. Remove corresponding pattern from CODEOWNERS?")
+        return unless record
+        return unless yes?("File deleted: #{file}. Remove corresponding pattern from CODEOWNERS?")
 
-          @checker.codeowners_file.delete line: record.line
-          write_codeowners_file
-        end
+        @checker.codeowners_file.delete line: record.line
+        write_codeowners_file
       end
 
       def suggest_fix_for(record)
@@ -171,13 +101,22 @@ module Code
         apply_suggestion(record, suggestion) if suggestion
       end
 
-      def apply_suggestion(record, suggestion)
-        result = ask("Pattern #{record.pattern} doesn't match. Replace with: #{suggestion} (y), ignore (i) or delete pattern (d)?", limited_to: %w[y i d])
-        return if result == 'i'
+      def make_suggestion(record, suggestion)
+        ask(<<~QUESTION, limited_to: %w[y i d])
+          Pattern #{record.pattern} doesn't match.
+          Replace with: #{suggestion}?
+          (y) to apply the suggestion
+          (i) to ignore
+          (d) to delete the pattern
+        QUESTION
+      end
 
-        if result == 'y'
+      def apply_suggestion(record, suggestion)
+        case make_suggestion(record, suggestion)
+        when 'i' then return
+        when 'y'
           @checker.codeowners_file.update line: record.line, pattern: suggestion
-        elsif result == 'd'
+        when 'd'
           @checker.codeowners_file.delete line: record.line
         end
         write_codeowners_file

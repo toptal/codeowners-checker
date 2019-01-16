@@ -32,16 +32,20 @@ this check.
 
 It will suggest files that need to be added or removed to the codeowners file. 
 
-### Changes
+### Filtering Changes in Pull Requests
 
 If you have a Pull Request to review and you just want to check the changes that
 make sense for your team, you can also filter the changes:
 
-    $  code-ownership-checker changes all
+    $  code-ownership-checker filter all
 
-It will use the default team file or you can pass the team as a parameter:
+It will use the default team file if you omit parameters:
 
-    $  code-ownership-checker changes by_team bootcamp
+    $  code-ownership-checker filter
+
+Or you can filter any team as a parameter:
+
+    $  code-ownership-checker filter by <owner>
 
 ## Development
 

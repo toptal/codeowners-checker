@@ -15,20 +15,20 @@ RSpec.describe Code::Ownership::CLI do
     it 'validates team file existence' do
       expect do
         cli.config
-      end.to output(/Team name should be specified or a default team defined/).to_stdout
+      end.to output(/Please provide a team name or configure a default team/).to_stdout
     end
 
     context 'when I have the file configured' do
       before do
         File.open(cli.default_team_file, 'w+') do |file|
-          file.puts 'bootcamp'
+          file.puts '@toptal/bootcamp'
         end
       end
 
       it 'shows the current team from file' do
         expect do
           cli.config
-        end.to output("configured: @toptal/bootcamp\n").to_stdout
+        end.to output("default team: @toptal/bootcamp\n").to_stdout
       end
     end
 
@@ -38,7 +38,7 @@ RSpec.describe Code::Ownership::CLI do
       it 'allow config a new team with the team parameter' do
         expect do
           cli.config
-        end.to output("configured: @toptal/blacksmiths\n").to_stdout
+        end.to output("default team: @toptal/blacksmiths\n").to_stdout
       end
     end
 
