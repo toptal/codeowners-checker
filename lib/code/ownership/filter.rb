@@ -49,14 +49,18 @@ module Code
 
         @repo_base_path.chomp!
         Dir.chdir(@repo_base_path)
+
+        @checker ||= config[:checker] || default_checker
       end
 
       default_task :by
 
       private
 
-      def checker
-        @checker ||= Code::Ownership::Checker.new(@repo_base_path, options[:from], options[:to])
+      attr_reader :checker
+
+      def default_checker
+        Code::Ownership::Checker.new(@repo_base_path, options[:from], options[:to])
       end
     end
   end

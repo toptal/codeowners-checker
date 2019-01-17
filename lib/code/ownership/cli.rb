@@ -19,6 +19,8 @@ module Code
       def check(repo = '.')
         @repo = repo
         setup_checker
+
+          require 'pry'; binding.pry
         @checker.check!
         @checker.commit_changes! if options[:interactive] && yes?('Commit changes?')
       end

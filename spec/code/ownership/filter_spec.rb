@@ -34,17 +34,19 @@ RSpec.describe Code::Ownership::Filter do
   describe '#by' do
     let(:diff) { { '@toptal/bootcamp' => ['lib/shared/file.rb'] } }
 
-    before do
+    let(:checker) do
       checker = double
       allow(checker).to receive(:changes_with_ownership).and_return(diff)
-      allow(cli).to receive(:checker).and_return(checker)
+      checker
     end
+
+    let(:config) { { checker: checker } }
 
     context 'when filter by explicity owner' do
       let(:args) { %w[by @toptal/bootcamp] }
 
       it 'applies the user input as the filter' do
-        expect(cli).not_to receive(:default_team)
+        expect(cli).not_to have_received(:default_team)
         expect do
           cli.by(args.last)
         end.to output(<<~OUTPUT).to_stdout
