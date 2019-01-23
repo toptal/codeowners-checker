@@ -23,3 +23,6 @@ RSpec/ExampleLength:
 
 RSpec/MessageSpies:
   Enabled: false
+
+RSpec/SubjectStub:
+  Enabled: false
