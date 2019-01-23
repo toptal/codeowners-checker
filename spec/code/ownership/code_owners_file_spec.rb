@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'code/ownership/code_owners_file'
+
 RSpec.describe Code::Ownership::CodeOwnersFile do
   let(:content) { <<~FILE.lines }
     # Linters

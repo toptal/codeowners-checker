@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'code/ownership/record'
+
 RSpec.describe Code::Ownership::Record do
   let(:sample) { ['.rubocop.yml', %w[@jonatas], 1, ['# Linters']] }
   let(:multiple_teams) { ['Gemfile', %w[@toptal/rogue-one @toptal/secops], 3, ['# Libraries']] }

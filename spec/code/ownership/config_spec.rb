@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'code/ownership/config'
+
 RSpec.describe Code::Ownership::Config do
   subject { described_class.new fake_git }
 

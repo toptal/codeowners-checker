@@ -5,8 +5,8 @@ require 'code/ownership/record'
 require 'code/ownership/code_owners_file'
 require 'git'
 require 'logger'
-
 require 'code/ownership/config'
+
 module Code
   module Ownership
     # Check code ownership is consistent between a git repository and

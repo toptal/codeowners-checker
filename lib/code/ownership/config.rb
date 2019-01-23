@@ -1,12 +1,14 @@
+# frozen_string_literal: true
 
 Git::Lib.class_eval do
-  def config_set name, value
-    command('config',  [ name, value])
-  rescue
-    command('config',  ["--add", name, value])
+  def config_set(name, value)
+    command('config',  [name, value])
+  rescue Git::GitExecuteError
+    command('config',  ['--add', name, value])
   end
+
   def config_get(name)
-    do_get = Proc.new do |path|
+    do_get = proc do |_path|
       command('config', ['--get', name])
     end
 
@@ -25,16 +27,22 @@ module Code
     end
 
     class Config
-      def initialize git = AnonymousGit.new
+      def initialize(git = AnonymousGit.new)
         @git = git
       end
 
       def default_team
-        @git.config("user.team")
+        @git.config('user.team')
       end
 
-      def default_team= name
-        @git.config("user.team", name)
+      def default_team=(name)
+        @git.config('user.team', name)
+      end
+
+      def to_h
+        {
+          default_team: default_team
+        }
       end
     end
   end

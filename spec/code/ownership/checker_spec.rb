@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'fileutils'
+require 'code/ownership/checker'
 
 RSpec.describe Code::Ownership::Checker do
   subject { described_class.check! folder_name, from, to }
