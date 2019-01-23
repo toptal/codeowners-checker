@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 require 'bundler/setup'
-require 'code/ownership/checker'
-require 'code/ownership/cli'
-require 'code/ownership/record'
-require 'code/ownership/code_owners_file'
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure

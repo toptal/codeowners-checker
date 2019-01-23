@@ -1,5 +1,8 @@
 require: rubocop-rspec
 
+AllCops:
+  TargetRubyVersion: 2.5
+
 Metrics/BlockLength:
   Enabled: false
 
@@ -16,4 +19,10 @@ RSpec/NamedSubject:
   Enabled: false
 
 RSpec/ExampleLength:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+RSpec/SubjectStub:
   Enabled: false

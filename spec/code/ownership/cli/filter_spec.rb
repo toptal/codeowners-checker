@@ -1,44 +1,25 @@
 # frozen_string_literal: true
 
-RSpec.describe Code::Ownership::Filter do
+require 'code/ownership/cli/filter'
+
+RSpec.describe Code::Ownership::Cli::Filter do
   subject(:cli) { described_class.new(args, options, config) }
 
   let(:args) { [] }
   let(:options) { {} }
-  let(:config) { {} }
-
-  describe '#default_team' do
-    context 'when I have the file configured' do
-      before do
-        File.open(cli.default_team_file, 'w+') do |file|
-          file.puts '@toptal/bootcamp'
-        end
-      end
-
-      after do
-        File.delete(cli.default_team_file) if File.exist?(cli.default_team_file)
-      end
-
-      it 'uses the config file to restore the team name' do
-        expect(cli.default_team).to eq('@toptal/bootcamp')
-      end
-    end
-
-    context 'when the config file does not exist' do
-      it 'returns nil' do
-        expect(cli.default_team).to be_nil
-      end
-    end
-  end
+  let(:git_config) { double }
+  let(:config) { { config: git_config } }
 
   describe '#by' do
     let(:diff) { { '@toptal/bootcamp' => ['lib/shared/file.rb'] } }
 
-    before do
+    let(:checker) do
       checker = double
       allow(checker).to receive(:changes_with_ownership).and_return(diff)
-      allow(cli).to receive(:checker).and_return(checker)
+      checker
     end
+
+    let(:config) { { checker: checker, config: git_config } }
 
     context 'when filter by explicity owner' do
       let(:args) { %w[by @toptal/bootcamp] }
@@ -57,7 +38,7 @@ RSpec.describe Code::Ownership::Filter do
       let(:args) { %w[] }
 
       it 'applies `by` with `default_team`' do
-        expect(cli).to receive(:default_team).and_return('@toptal/bootcamp')
+        expect(git_config).to receive(:default_team).and_return('@toptal/bootcamp')
         cli.by
       end
     end
