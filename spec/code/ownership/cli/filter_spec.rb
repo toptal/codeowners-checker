@@ -8,18 +8,15 @@ RSpec.describe Code::Ownership::Cli::Filter do
   let(:args) { [] }
   let(:options) { {} }
   let(:git_config) { double }
-  let(:config) { { config: git_config } }
+  let(:checker) { double }
+  let(:config) { { checker: checker, config: git_config } }
+  
+  before do
+    allow(checker).to receive(:changes_with_ownership).and_return(diff)
+  end
 
   describe '#by' do
     let(:diff) { { '@toptal/bootcamp' => ['lib/shared/file.rb'] } }
-
-    let(:checker) do
-      checker = double
-      allow(checker).to receive(:changes_with_ownership).and_return(diff)
-      checker
-    end
-
-    let(:config) { { checker: checker, config: git_config } }
 
     context 'when filter by explicity owner' do
       let(:args) { %w[by @toptal/bootcamp] }
@@ -52,6 +49,40 @@ RSpec.describe Code::Ownership::Cli::Filter do
         end.to output(<<~OUTPUT).to_stdout
           Owner @toptal/other not defined in .github/CODEOWNERS
         OUTPUT
+      end
+    end
+  end
+
+  describe '#all' do
+    let(:diff) { { '@toptal/bootcamp' => ['lib/shared/file.rb'],
+       '@toptal/verticalization' => ['lib/shared/other_file.rb']} }
+
+    context 'when files are changed' do
+      it 'returns array containing teams changing files' do
+        expect(cli.all).to match_array(["@toptal/bootcamp", "@toptal/verticalization"])
+      end
+
+      it 'outputs string containing changed files and strings' do
+        expect do
+          cli.all
+        end.to output(<<~OUTPUT).to_stdout
+          @toptal/bootcamp:\n  lib/shared/file.rb\n
+          @toptal/verticalization:\n  lib/shared/other_file.rb\n
+        OUTPUT
+      end
+    end
+
+    context 'when no files are changed' do
+      let(:diff) { { } }
+
+      it 'returns an empty array' do
+        expect(cli.all).to match_array([])
+      end
+
+      it 'outputs an empty string' do
+        expect do
+          cli.all
+        end.to output('').to_stdout
       end
     end
   end
