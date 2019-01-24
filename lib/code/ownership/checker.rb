@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-require 'code/ownership/checker/version'
-require 'code/ownership/record'
-require 'code/ownership/code_owners_file'
 require 'git'
 require 'logger'
+
+require 'code/ownership/checker/version'
+require 'code/ownership/checker/code_owners'
+require 'code/ownership/checker/code_owners_file'
 require 'code/ownership/config'
 
 module Code
@@ -19,19 +20,18 @@ module Code
         new(repo, from, to).check!
       end
 
-      FILE_LOCATION = '.github/CODEOWNERS'
-
       attr_accessor :when_useless_pattern, :when_new_file
+
       # Get repo metadata and compare with the owners
       def initialize(repo, from, to)
         @git = Git.open(repo, log: Logger.new(IO::NULL))
         @repo_dir = repo
-        @from = from
+        @from = from || 'HEAD'
         @to = to
       end
 
       def changes_to_analyze
-        @git.diff(master, my_changes).name_status
+        @git.diff(@from, @to).name_status
       end
 
       def added_files
@@ -42,16 +42,8 @@ module Code
         changes_to_analyze.keys
       end
 
-      def master
-        @git.object(@from)
-      end
-
-      def my_changes
-        @git.object(@to)
-      end
-
       def check!
-        @ownership ||= codeowners_file.parse!
+        @ownership ||= codeowners.parse!
         {
           missing_ref: missing_reference,
           useless_pattern: useless_pattern
@@ -59,7 +51,7 @@ module Code
       end
 
       def changes_for_patterns(patterns)
-        @git.diff(master, my_changes).path(patterns).name_status.keys
+        @git.diff(@from, @to).path(patterns).name_status.keys
       end
 
       def patterns_by_owner
@@ -107,20 +99,16 @@ module Code
         end
       end
 
-      def codeowners_raw_content
-        codeowners_from_git.contents.lines
-      end
-
-      def codeowners_from_git
-        @git.gblob("#{@to}:#{FILE_LOCATION}")
-      end
-
-      def codeowners_file
-        @codeowners_file ||= CodeOwnersFile.new(codeowners_raw_content)
+      def codeowners
+        @codeowners ||= CodeOwners.new(
+          CodeOwnersFile.new(
+            File.join(@repo_dir, '.github', 'CODEOWNERS')
+          )
+        )
       end
 
       def ownership
-        @ownership ||= codeowners_file.parse!
+        @ownership ||= codeowners.parse!
       end
 
       def commit_changes!

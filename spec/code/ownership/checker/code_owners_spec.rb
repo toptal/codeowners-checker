@@ -1,21 +1,32 @@
 # frozen_string_literal: true
 
-require 'code/ownership/code_owners_file'
+require 'fileutils'
+require 'tmpdir'
 
-RSpec.describe Code::Ownership::CodeOwnersFile do
-  let(:content) { <<~FILE.lines }
-    # Linters
-    .rubocop.yml @jonatas
-    # Libraries
-    Gemfile @toptal/rogue-one @toptal/secops
+require 'code/ownership/checker/code_owners'
 
-    # Team related code
-    # Billing related
-    lib/billing/* @toptal/billing
-  FILE
+RSpec.describe Code::Ownership::Checker::CodeOwners do
+  let(:content) do
+    [
+      '# Linters',
+      '.rubocop.yml @jonatas',
+      '# Libraries',
+      'Gemfile @toptal/rogue-one @toptal/secops',
+      '',
+      '# Team related code',
+      '# Billing related',
+      'lib/billing/* @toptal/billing'
+    ]
+  end
+
+  let(:code_owners_file) { double }
+
+  before do
+    allow(code_owners_file).to receive(:content).and_return(content)
+  end
 
   describe '#parse!' do
-    subject { described_class.new(content).parse! }
+    subject { described_class.new(code_owners_file).parse! }
 
     it 'returns a list of Ownership' do
       expect(subject).to be_a(Array)
@@ -48,7 +59,7 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
   end
 
   describe '#update' do
-    subject { described_class.new(content) }
+    subject { described_class.new(code_owners_file) }
 
     before  { subject.parse! }
 
@@ -69,7 +80,7 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
   end
 
   describe '#insert' do
-    subject { described_class.new(content) }
+    subject { described_class.new(code_owners_file) }
 
     before  { subject.parse! }
 
@@ -81,7 +92,7 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
   end
 
   describe '#delete' do
-    subject { described_class.new(content) }
+    subject { described_class.new(code_owners_file) }
 
     before  { subject.parse! }
 
@@ -98,23 +109,27 @@ RSpec.describe Code::Ownership::CodeOwnersFile do
     end
   end
 
-  describe 'process_content!' do
-    subject { described_class.new(content) }
+  describe 'persist!' do
+    subject { described_class.new(code_owners_file) }
 
     before  { subject.parse! }
 
-    it 'changes content in memory' do
+    it 'writes changes to disk' do
       subject.update line: 2, pattern: '.rubocop*', owners: %w[@other]
       subject.update line: 4, owners: %w[@toptal/secops]
       subject.update line: 8, comments: ['# Billing related']
-      expect(subject.process_content!.join("\n")).to eq(<<~CONTENT.chomp)
-        # Linters
-        .rubocop* @other
-        # Libraries
-        Gemfile @toptal/secops
-        # Billing related
-        lib/billing/* @toptal/billing
-      CONTENT
+
+      expect(code_owners_file).to receive(:content=).with(
+        [
+          '# Linters',
+          '.rubocop* @other',
+          '# Libraries',
+          'Gemfile @toptal/secops',
+          '# Billing related',
+          'lib/billing/* @toptal/billing'
+        ]
+      )
+      subject.persist!
     end
   end
 end
