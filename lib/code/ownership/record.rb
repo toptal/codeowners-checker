@@ -19,7 +19,7 @@ module Code
         [
           *comments,
           [pattern, owners].join(' ')
-        ].join("\n")
+        ]
       end
 
       # Pick all files from parent folder of pattern.

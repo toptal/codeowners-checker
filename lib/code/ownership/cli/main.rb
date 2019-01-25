@@ -17,6 +17,7 @@ module Code
         option :to, default: 'HEAD'
         option :interactive, default: true, type: :boolean, aliases: '-i'
         desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
+        # for pre-commit: --from HEAD --to index
         def check(repo = '.')
           @repo = repo
           setup_checker
@@ -36,18 +37,14 @@ module Code
         private
 
         def setup_checker
-          @checker = Code::Ownership::Checker.new(@repo, options[:from], options[:to])
+          to = options[:to] != 'index' ? options[:to] : nil
+          @checker = Code::Ownership::Checker.new(@repo, options[:from], to)
           @checker.when_useless_pattern = method(:suggest_fix_for)
           @checker.when_new_file = method(:suggest_add_to_codeowners)
         end
 
-        def write_codeowners_file
-          File.open(@repo + '/' + Code::Ownership::Checker::FILE_LOCATION, 'w+') do |f|
-            f.puts @checker.codeowners_file.process_content!.join("\n")
-          end
-          # We need to reparse the file after changes have been made,
-          # to make sure the line numbers are correct
-          @checker.codeowners_file.parse!
+        def write_codeowners
+          @checker.codeowners.persist!
         end
 
         def suggest_add_to_codeowners(file)
@@ -57,8 +54,8 @@ module Code
 
           return if owner.nil? || owner.empty?
 
-          @checker.codeowners_file.append pattern: file, owners: owner
-          write_codeowners_file
+          @checker.codeowners.append pattern: file, owners: owner
+          write_codeowners
         end
 
         def suggest_fix_for(record)
@@ -82,11 +79,11 @@ module Code
           case make_suggestion(record, suggestion)
           when 'i' then return
           when 'y'
-            @checker.codeowners_file.update line: record.line, pattern: suggestion
+            @checker.codeowners.update line: record.line, pattern: suggestion
           when 'd'
-            @checker.codeowners_file.delete line: record.line
+            @checker.codeowners.delete line: record.line
           end
-          write_codeowners_file
+          write_codeowners
         end
       end
     end

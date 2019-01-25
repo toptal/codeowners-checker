@@ -10,7 +10,7 @@ RSpec.describe Code::Ownership::Cli::Filter do
   let(:git_config) { double }
   let(:checker) { double }
   let(:config) { { checker: checker, config: git_config } }
-  
+
   before do
     allow(checker).to receive(:changes_with_ownership).and_return(diff)
   end
@@ -54,12 +54,14 @@ RSpec.describe Code::Ownership::Cli::Filter do
   end
 
   describe '#all' do
-    let(:diff) { { '@toptal/bootcamp' => ['lib/shared/file.rb'],
-       '@toptal/verticalization' => ['lib/shared/other_file.rb']} }
+    let(:diff) do
+      { '@toptal/bootcamp' => ['lib/shared/file.rb'],
+        '@toptal/verticalization' => ['lib/shared/other_file.rb'] }
+    end
 
     context 'when files are changed' do
       it 'returns array containing teams changing files' do
-        expect(cli.all).to match_array(["@toptal/bootcamp", "@toptal/verticalization"])
+        expect(cli.all).to match_array(['@toptal/bootcamp', '@toptal/verticalization'])
       end
 
       it 'outputs string containing changed files and strings' do
@@ -73,7 +75,7 @@ RSpec.describe Code::Ownership::Cli::Filter do
     end
 
     context 'when no files are changed' do
-      let(:diff) { { } }
+      let(:diff) { {} }
 
       it 'returns an empty array' do
         expect(cli.all).to match_array([])

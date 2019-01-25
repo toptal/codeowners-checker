@@ -12,29 +12,41 @@ RSpec.describe Code::Ownership::Record do
     context 'with sample' do
       subject { described_class.new(*sample).to_row }
 
-      it { is_expected.to eq(<<~OUTPUT.chomp) }
-        # Linters
-        .rubocop.yml @jonatas
-      OUTPUT
+      it do
+        expect(subject).to eq(
+          [
+            '# Linters',
+            '.rubocop.yml @jonatas'
+          ]
+        )
+      end
     end
 
     context 'with multiple teams' do
       subject { described_class.new(*multiple_teams).to_row }
 
-      it { is_expected.to eq(<<~OUTPUT.chomp) }
-        # Libraries
-        Gemfile @toptal/rogue-one @toptal/secops
-      OUTPUT
+      it do
+        expect(subject).to eq(
+          [
+            '# Libraries',
+            'Gemfile @toptal/rogue-one @toptal/secops'
+          ]
+        )
+      end
     end
 
     context 'with patterns' do
       subject { described_class.new(*any_file_from_team).to_row }
 
-      it { is_expected.to eq(<<~OUTPUT.chomp) }
-        # Team specific
-        # Billing Team
-        lib/billing/* @toptal/billing
-      OUTPUT
+      it do
+        expect(subject).to eq(
+          [
+            '# Team specific',
+            '# Billing Team',
+            'lib/billing/* @toptal/billing'
+          ]
+        )
+      end
     end
   end
 
