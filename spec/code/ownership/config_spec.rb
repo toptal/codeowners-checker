@@ -5,9 +5,7 @@ require 'code/ownership/config'
 RSpec.describe Code::Ownership::Config do
   subject { described_class.new fake_git }
 
-  let(:fake_git) do
-    double
-  end
+  let(:fake_git) { double }
 
   describe '#default_team' do
     it 'picks default user.team from git configuration' do
@@ -20,6 +18,13 @@ RSpec.describe Code::Ownership::Config do
     it 'sets default user.team from git configuration' do
       expect(fake_git).to receive('config').with('user.team', 'my-team')
       subject.default_team = 'my-team'
+    end
+  end
+
+  describe '#to_h' do
+    it 'converts default_team to a hash' do
+      expect(fake_git).to receive('config').with('user.team').and_return('my-team')
+      expect(subject.to_h).to eq(default_team: 'my-team')
     end
   end
 end

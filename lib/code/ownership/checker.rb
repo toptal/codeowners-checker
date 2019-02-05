@@ -5,7 +5,7 @@ require 'logger'
 
 require 'code/ownership/checker/version'
 require 'code/ownership/checker/code_owners'
-require 'code/ownership/checker/code_owners_file'
+require 'code/ownership/checker/file_as_array'
 require 'code/ownership/config'
 
 module Code
@@ -101,10 +101,12 @@ module Code
 
       def codeowners
         @codeowners ||= CodeOwners.new(
-          CodeOwnersFile.new(
-            File.join(@repo_dir, '.github', 'CODEOWNERS')
-          )
+          FileAsArray.new(codeowners_file)
         )
+      end
+
+      def codeowners_file
+        File.join(@repo_dir, '.github', 'CODEOWNERS')
       end
 
       def ownership
@@ -112,7 +114,7 @@ module Code
       end
 
       def commit_changes!
-        @git.add(FILE_LOCATION)
+        @git.add(codeowners_file)
         @git.commit('Fix pattern :robot:')
       end
     end

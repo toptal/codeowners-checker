@@ -3,9 +3,9 @@
 require 'fileutils'
 require 'tmpdir'
 
-require 'code/ownership/checker/code_owners_file'
+require 'code/ownership/checker/file_as_array'
 
-RSpec.describe Code::Ownership::Checker::CodeOwnersFile do
+RSpec.describe Code::Ownership::Checker::FileAsArray do
   subject { described_class.new(file_path) }
 
   let!(:tmp_dir) { Dir.mktmpdir }
@@ -15,10 +15,11 @@ RSpec.describe Code::Ownership::Checker::CodeOwnersFile do
 
   describe '#content' do
     context 'when the file exist' do
-      let(:lines) { ['line 1', 'line 2'] }
+      let(:lines) { ['line 1', '', 'line 2'] }
       let(:content) { <<~FILE }
         line 1
-        line 2
+
+        line 3
       FILE
 
       before do

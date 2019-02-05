@@ -6,7 +6,6 @@ require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
 
-# frozen_string_literal: true
 module Code
   module Ownership
     module Cli
