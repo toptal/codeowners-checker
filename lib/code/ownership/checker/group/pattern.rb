@@ -15,6 +15,14 @@ module Code
           end
 
           def initialize(line)
+            parse(line)
+          end
+
+          def owner
+            owners.first
+          end
+
+          def parse(line)
             @pattern, *@owners = line.split(/\s+/)
           end
 

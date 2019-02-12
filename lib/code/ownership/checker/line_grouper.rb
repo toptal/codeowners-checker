@@ -16,22 +16,28 @@ module Code
           lines.each_with_index do |line, index|
             case line
             when Code::Ownership::Checker::Group::Empty
-              new_group if current_level.zero?
+              ensure_groups_structure
             when Code::Ownership::Checker::Group::GroupBeginComment
               trim_groups(line.level)
-              new_group
+              create_groups_structure(line.level)
             when Code::Ownership::Checker::Group::GroupEndComment
               trim_subgroups(line.level)
-              new_group if current_level < line.level
+              create_groups_structure(line.level)
             when Code::Ownership::Checker::Group::Comment
               if previous_line_empty?(index)
                 trim_groups(line.level)
               else
                 trim_subgroups(line.level)
               end
-              new_group if current_level < line.level
-            when Code::Ownership::Checker::Group::Pattern, Code::Ownership::Checker::Group::UnrecognizedLine
-              new_group if current_level.zero?
+              create_groups_structure(line.level)
+            when Code::Ownership::Checker::Group::Pattern
+              if new_owner?(line, index)
+                trim_groups(current_level)
+                new_group
+              end
+              ensure_groups_structure
+            when Code::Ownership::Checker::Group::UnrecognizedLine
+              ensure_groups_structure
             else
               raise "Do not know how to handle line: #{line.inspect}"
             end
@@ -48,6 +54,24 @@ module Code
           index.positive? && lines[index - 1].is_a?(Code::Ownership::Checker::Group::Empty)
         end
 
+        def new_owner?(line, index)
+          if previous_line_empty?(index)
+            offset = 2
+            while (index - offset).positive?
+              case lines[index - offset]
+              when Code::Ownership::Checker::Group::GroupEndComment
+                nil
+              when Code::Ownership::Checker::Group::Comment
+                return false
+              when Code::Ownership::Checker::Group::Pattern
+                return line.owner != lines[index - offset].owner
+              end
+              offset += 1
+            end
+          end
+          false
+        end
+
         def current_group
           group_buffer.last
         end
@@ -60,6 +84,14 @@ module Code
           group = Group.new
           current_group.add(group)
           group_buffer << group
+        end
+
+        def ensure_groups_structure
+          new_group if current_level.zero?
+        end
+
+        def create_groups_structure(level)
+          new_group while current_level < level
         end
 
         def trim_groups(level)

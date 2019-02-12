@@ -19,7 +19,7 @@ RSpec.describe Code::Ownership::Checker::FileAsArray do
       let(:content) { <<~FILE }
         line 1
 
-        line 3
+        line 2
       FILE
 
       before do

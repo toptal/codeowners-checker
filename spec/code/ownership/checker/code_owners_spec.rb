@@ -6,8 +6,6 @@ require 'tmpdir'
 require 'code/ownership/checker/code_owners'
 
 RSpec.describe Code::Ownership::Checker::CodeOwners do
-  subject { described_class.new }
-
   let(:example_content) do
     [
       '#comment1',
@@ -18,6 +16,9 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
       'pattern1 @owner',
       'pattern2 @owner',
       'pattern3 @owner',
+      '',
+      'pattern10 @owner2',
+      'pattern11 @owner2',
       '',
       '#group2',
       'pattern4 @owner1',
@@ -30,8 +31,12 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
       '##group3.1',
       'pattern7 @owner3',
       '',
+      'pattern71 @owner2',
+      '',
       '##group3.2',
       'pattern8 @owner',
+      '',
+      'pattern9 @owner',
       '',
       '# END group 3'
     ]
@@ -59,6 +64,12 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
     add_content(group1, '')
     example_group.add(group1)
 
+    no_name = Code::Ownership::Checker::Group.new
+    add_content(no_name, 'pattern10 @owner2')
+    add_content(no_name, 'pattern11 @owner2')
+    add_content(no_name, '')
+    example_group.add(no_name)
+
     group2 = Code::Ownership::Checker::Group.new
     add_content(group2, '#group2')
     add_content(group2, 'pattern4 @owner1')
@@ -76,9 +87,15 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
     add_content(group3_1, 'pattern7 @owner3')
     add_content(group3_1, '')
     group3.add(group3_1)
+    group3_no_name = Code::Ownership::Checker::Group.new
+    add_content(group3_no_name, 'pattern71 @owner2')
+    add_content(group3_no_name, '')
+    group3.add(group3_no_name)
     group3_2 = Code::Ownership::Checker::Group.new
     add_content(group3_2, '##group3.2')
     add_content(group3_2, 'pattern8 @owner')
+    add_content(group3_2, '')
+    add_content(group3_2, 'pattern9 @owner')
     add_content(group3_2, '')
     group3.add(group3_2)
     add_content(group3, '# END group 3')
@@ -91,16 +108,15 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
     end
   end
 
-  describe '#parse_file' do
-    let(:group) { described_class.new }
+  describe '#initialize' do
+    subject { described_class.new(file_manager) }
 
     let(:file_manager) { double }
 
     it 'parses the content into groups' do
       expect(file_manager).to receive(:content).and_return(example_content)
-      group.parse_file(file_manager)
-      expect(group.to_tree).to be == example_group.to_tree
-      expect(group).to be == example_group
+      expect(subject.main_group.to_tree).to be == example_group.to_tree
+      expect(subject.main_group).to be == example_group
     end
   end
 end

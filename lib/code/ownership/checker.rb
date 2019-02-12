@@ -38,12 +38,7 @@ module Code
         changes_to_analyze.select { |_k, v| v == 'A' }.keys
       end
 
-      def changed_files
-        changes_to_analyze.keys
-      end
-
       def check!
-        @ownership ||= codeowners.parse!
         {
           missing_ref: missing_reference,
           useless_pattern: useless_pattern
@@ -56,8 +51,10 @@ module Code
 
       def patterns_by_owner
         @patterns_by_owner ||=
-          ownership.each_with_object(hash_of_arrays) do |rec, patterns_by_owner|
-            rec.owners.each { |owner| patterns_by_owner[owner] << rec.pattern }
+          codeowners.list.each_with_object(hash_of_arrays) do |line, patterns_by_owner|
+            next unless line.pattern?
+
+            line.owners.each { |owner| patterns_by_owner[owner] << line.pattern }
           end
       end
 
@@ -74,9 +71,11 @@ module Code
       end
 
       def useless_pattern
-        ownership.select do |row|
-          unless pattern_has_files(row.pattern)
-            @when_useless_pattern&.call(row)
+        codeowners.list.select do |line|
+          next unless line.pattern?
+
+          unless pattern_has_files(line.pattern)
+            @when_useless_pattern&.call(line)
             true
           end
         end
@@ -91,26 +90,22 @@ module Code
       end
 
       def defined_owner?(file)
-        if ownership.find { |row| row.regex.match file }
-          true
-        else
-          @when_new_file&.call(file) if @when_new_file
-          false
+        codeowners.list.find do |line|
+          next unless line.pattern?
+
+          return true if file == line.pattern
         end
+
+        @when_new_file&.call(file) if @when_new_file
+        false
       end
 
       def codeowners
-        @codeowners ||= CodeOwners.new(
-          FileAsArray.new(codeowners_file)
-        )
+        @codeowners ||= CodeOwners.new(FileAsArray.new(codeowners_file))
       end
 
       def codeowners_file
         File.join(@repo_dir, '.github', 'CODEOWNERS')
-      end
-
-      def ownership
-        @ownership ||= codeowners.parse!
       end
 
       def commit_changes!

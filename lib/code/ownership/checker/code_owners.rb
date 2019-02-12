@@ -6,28 +6,29 @@ require 'code/ownership/checker/group/comment'
 module Code
   module Ownership
     class Checker
-      class CodeOwners < Group
-        def parse_file(new_file_manager = nil)
-          file_manager = new_file_manager
-          lines = file_manager.content.map(&Code::Ownership::Checker::Group::Line.method(:build))
-          # TODO: ask the user to fix unrecognized lines?
-          parse(lines)
+      class CodeOwners
+        attr_reader :list, :main_group, :file_manager
+
+        def initialize(file_manager)
+          @file_manager = file_manager
+          parse_file
+          @main_group = Group.new.parse(@list)
         end
 
-        def persist!(new_file_manager = nil)
-          file_manager = new_file_manager
-          file_manager.content = to_content
+        def persist!
+          file_manager.content = main_group.to_content
+        end
+
+        def remove(content)
+          @list.delete(content)
         end
 
         private
 
-        # TODO: raise exception if no @file_manager
-        attr_reader :file_manager
-
-        def file_manager=(file_manager)
-          raise ArgumentError, '' if file_manager.nil? && @file_manager.nil?
-
-          @file_manager = file_manager if file_manager
+        def parse_file
+          @list = @file_manager.content.map(&Code::Ownership::Checker::Group::Line.method(:build))
+          @list.each { |line| line.parents << self }
+          # TODO: ask the user to fix unrecognized lines?
         end
       end
     end

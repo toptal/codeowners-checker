@@ -8,16 +8,16 @@ module Code
       class Config < Base
         default_task :list
 
-        desc 'list', 'List the default team configured in the config file'
+        desc 'list', 'List the default owner configured in the config file'
         def list
           puts(config.to_h.map { |name, value| "#{name}: #{value.inspect}" })
-          help_stderr if config.default_team.empty?
+          help_stderr if config.default_owner.empty?
         end
 
-        desc 'team <name>', 'Configure a default team name'
-        def team(name)
-          config.default_team = name
-          puts "Default team configured to #{name}"
+        desc 'owner <name>', 'Configure a default owner name'
+        def owner(name)
+          config.default_owner = name
+          puts "Default owner configured to #{name}"
         end
       end
     end

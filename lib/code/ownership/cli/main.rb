@@ -18,9 +18,11 @@ module Code
         desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
         # for pre-commit: --from HEAD --to index
         def check(repo = '.')
+          @codeowners_changed = false
           @repo = repo
           setup_checker
           @checker.check!
+          write_codeowners if @codeowners_changed
           @checker.commit_changes! if options[:interactive] && yes?('Commit changes?')
         end
 
@@ -51,38 +53,64 @@ module Code
 
           owner = ask('File owner(s): ')
 
-          return if owner.nil? || owner.empty?
+          return if owner.empty?
 
-          @checker.codeowners.append pattern: file, owners: owner
-          write_codeowners
+          line = "#{file} #{owner}"
+          pattern = Code::Ownership::Checker::Group::Line.build(line)
+          subgroups = @checker.codeowners.main_group.subgroups_owned_by(pattern.owner)
+          add_pattern(pattern, subgroups)
+
+          @codeowners_changed = true
         end
 
-        def suggest_fix_for(record)
-          pattern = record.pattern
-          search = FuzzyMatch.new(record.suggest_files_for_pattern)
-          suggestion = search.find(pattern)
-          apply_suggestion(record, suggestion) if suggestion
+        def add_pattern(pattern, subgroups)
+          unless subgroups.empty?
+            return if insert_into_group(pattern, subgroups) == true
+          end
+
+          @checker.codeowners.main_group.add(pattern) if yes?('Add to the end of the codeowners file?')
         end
 
-        def make_suggestion(record, suggestion)
+        def insert_into_group(pattern, subgroups)
+          subgroup = suggest_groups(subgroups).to_i - 1
+          return unless subgroup >= 0 && subgroup < subgroups.length
+
+          subgroups[subgroup].insert(pattern)
+          true
+        end
+
+        def suggest_groups(subgroups)
+          puts 'Possible groups to which the pattern belongs: '
+          subgroups.each_with_index { |group, i| puts "#{i + 1} - #{group.title}" }
+          ask('Choose group: ')
+        end
+
+        def suggest_fix_for(line)
+          # TODO: allow user to fix the pattern if no good suggestion
+          search = FuzzyMatch.new(line.suggest_files_for_pattern)
+          suggestion = search.find(line.pattern)
+          apply_suggestion(line, suggestion) if suggestion
+        end
+
+        def make_suggestion(line, suggestion)
           ask(<<~QUESTION, limited_to: %w[y i d])
-            Pattern #{record.pattern} doesn't match.
+            Pattern #{line.pattern} doesn't match.
             Replace with: #{suggestion}?
-            (y) to apply the suggestion
-            (i) to ignore
-            (d) to delete the pattern
+            (y) yes
+            (i) ignore
+            (d) delete the pattern
           QUESTION
         end
 
-        def apply_suggestion(record, suggestion)
-          case make_suggestion(record, suggestion)
+        def apply_suggestion(line, suggestion)
+          case make_suggestion(line, suggestion)
           when 'i' then return
           when 'y'
-            @checker.codeowners.update line: record.line, pattern: suggestion
+            line.pattern = suggestion
           when 'd'
-            @checker.codeowners.delete line: record.line
+            line.remove!
           end
-          write_codeowners
+          @codeowners_changed = true
         end
       end
     end
