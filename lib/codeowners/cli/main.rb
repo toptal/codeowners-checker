@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require_relative 'base'
+require_relative 'filter'
+
 module Codeowners
   module Cli
     # Command Line Interface used by bin/code-owners-checker.
@@ -25,9 +27,6 @@ module Codeowners
 
       desc 'config', 'Checks config is consistent or configure it'
       subcommand 'config', Codeowners::Cli::Config
-
-      # desc 'check', 'Checks .github/CODEOWNERS consistency'
-      # subcommand 'check', Ownership::Cli::Check
 
       private
 

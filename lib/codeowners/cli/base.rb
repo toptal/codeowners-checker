@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
 require 'thor'
+
+require_relative 'config'
+require_relative '../config'
+
 module Codeowners
   module Cli
     # Base collects shared methods used by all CLI sub commands
@@ -29,3 +33,4 @@ module Codeowners
     end
   end
 end
+

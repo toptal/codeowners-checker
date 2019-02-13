@@ -3,6 +3,6 @@
 
 $LOAD_PATH.unshift(File.expand_path('../lib', __dir__))
 
-require 'code/ownership/cli/main'
+require 'codeowners/cli/main'
 
-Code::Ownership::Cli::Main.start ARGV
+Codeowners::Cli::Main.start ARGV
