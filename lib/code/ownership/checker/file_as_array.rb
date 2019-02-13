@@ -3,8 +3,8 @@
 module Code
   module Ownership
     class Checker
-      # manage .github/CODEOWNERS reading and re-writing.
-      class CodeOwnersFile
+      # Convert CODEOWNERS file content to an array.
+      class FileAsArray
         def initialize(file)
           @file = file
           @target_dir, = File.split(@file)

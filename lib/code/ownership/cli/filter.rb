@@ -3,28 +3,29 @@
 require_relative '../checker'
 require_relative 'base'
 
-# frozen_string_literal: true
 module Code
   module Ownership
     module Cli
+      # List changed files. Provide an option to list all the changed files grouped by
+      # the owner of the file or filter them and show only the files owned by default owner.
       class Filter < Base
         option :from, default: 'origin/master'
         option :to, default: 'HEAD'
         option :verbose, default: false, type: :boolean, aliases: '-v'
         desc 'by <owner>', <<~DESC
-          Lists changed files owned by TEAM.
-          If no team is specified, default team is taken from .default_team.
+          Lists changed files owned by owner.
+          If no owner is specified, default owner is taken from the config file.
         DESC
         # option :local, default: false, type: :boolean, aliases: '-l'
         # option :branch, default: '', aliases: '-b'
-        def by(team_name = config.default_team)
-          return if team_name.nil?
+        def by(owner = config.default_owner)
+          return if owner.empty?
 
-          changes = checker.changes_with_ownership(team_name)
-          if changes.key?(team_name)
+          changes = checker.changes_with_ownership(owner)
+          if changes.key?(owner)
             changes.values.each { |file| puts file }
           else
-            puts "Owner #{team_name} not defined in .github/CODEOWNERS"
+            puts "Owner #{owner} not defined in .github/CODEOWNERS"
           end
         end
 

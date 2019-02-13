@@ -6,130 +6,111 @@ require 'tmpdir'
 require 'code/ownership/checker/code_owners'
 
 RSpec.describe Code::Ownership::Checker::CodeOwners do
-  let(:content) do
+  let(:example_content) do
     [
-      '# Linters',
-      '.rubocop.yml @jonatas',
-      '# Libraries',
-      'Gemfile @toptal/rogue-one @toptal/secops',
+      '#comment1',
+      '#comment2',
       '',
-      '# Team related code',
-      '# Billing related',
-      'lib/billing/* @toptal/billing'
+      '',
+      '#group1',
+      'pattern1 @owner',
+      'pattern2 @owner',
+      'pattern3 @owner',
+      '',
+      'pattern10 @owner2',
+      'pattern11 @owner2',
+      '',
+      '#group2',
+      'pattern4 @owner1',
+      'pattern5 @owner2',
+      'pattern6 @owner1 @owner2',
+      '',
+      '# BEGIN group 3',
+      '#comment3',
+      '',
+      '##group3.1',
+      'pattern7 @owner3',
+      '',
+      'pattern71 @owner2',
+      '',
+      '##group3.2',
+      'pattern8 @owner',
+      '',
+      'pattern9 @owner',
+      '',
+      '# END group 3'
     ]
   end
 
-  let(:code_owners_file) { double }
+  let(:example_group) { Code::Ownership::Checker::Group.new }
+
+  def add_content(group, text)
+    group.add(Code::Ownership::Checker::Group::Line.build(text))
+  end
 
   before do
-    allow(code_owners_file).to receive(:content).and_return(content)
+    comments_group = Code::Ownership::Checker::Group.new
+    add_content(comments_group, '#comment1')
+    add_content(comments_group, '#comment2')
+    add_content(comments_group, '')
+    add_content(comments_group, '')
+    example_group.add(comments_group)
+
+    group1 = Code::Ownership::Checker::Group.new
+    add_content(group1, '#group1')
+    add_content(group1, 'pattern1 @owner')
+    add_content(group1, 'pattern2 @owner')
+    add_content(group1, 'pattern3 @owner')
+    add_content(group1, '')
+    example_group.add(group1)
+
+    no_name = Code::Ownership::Checker::Group.new
+    add_content(no_name, 'pattern10 @owner2')
+    add_content(no_name, 'pattern11 @owner2')
+    add_content(no_name, '')
+    example_group.add(no_name)
+
+    group2 = Code::Ownership::Checker::Group.new
+    add_content(group2, '#group2')
+    add_content(group2, 'pattern4 @owner1')
+    add_content(group2, 'pattern5 @owner2')
+    add_content(group2, 'pattern6 @owner1 @owner2')
+    add_content(group2, '')
+    example_group.add(group2)
+
+    group3 = Code::Ownership::Checker::Group.new
+    add_content(group3, '# BEGIN group 3')
+    add_content(group3, '#comment3')
+    add_content(group3, '')
+    group3_1 = Code::Ownership::Checker::Group.new
+    add_content(group3_1, '##group3.1')
+    add_content(group3_1, 'pattern7 @owner3')
+    add_content(group3_1, '')
+    group3.add(group3_1)
+    group3_no_name = Code::Ownership::Checker::Group.new
+    add_content(group3_no_name, 'pattern71 @owner2')
+    add_content(group3_no_name, '')
+    group3.add(group3_no_name)
+    group3_2 = Code::Ownership::Checker::Group.new
+    add_content(group3_2, '##group3.2')
+    add_content(group3_2, 'pattern8 @owner')
+    add_content(group3_2, '')
+    add_content(group3_2, 'pattern9 @owner')
+    add_content(group3_2, '')
+    group3.add(group3_2)
+    add_content(group3, '# END group 3')
+    example_group.add(group3)
   end
 
-  describe '#parse!' do
-    subject { described_class.new(code_owners_file).parse! }
+  describe '#initialize' do
+    subject { described_class.new(file_manager) }
 
-    it 'returns a list of Ownership' do
-      expect(subject).to be_a(Array)
-      expect(subject.first).to be_a(Code::Ownership::Record)
-    end
+    let(:file_manager) { double }
 
-    it 'parses rubocop info with comments and owner' do
-      rubocop_spec = subject.first
-      expect(rubocop_spec.comments).to include('# Linters')
-      expect(rubocop_spec.pattern).to eq('.rubocop.yml')
-      expect(rubocop_spec.owners).to include('@jonatas')
-      expect(rubocop_spec.line).to eq(2)
-    end
-
-    it 'parses info with multiple owners' do
-      gemfile_spec = subject[1]
-      expect(gemfile_spec.comments).to include('# Libraries')
-      expect(gemfile_spec.pattern).to eq('Gemfile')
-      expect(gemfile_spec.owners).to match_array(%w[@toptal/rogue-one @toptal/secops])
-      expect(gemfile_spec.line).to eq(4)
-    end
-
-    it 'creates a regex based on pattern' do
-      billing_spec = subject[2]
-      expect(billing_spec.comments).to match_array(['', '# Team related code', '# Billing related'])
-      expect(billing_spec.pattern).to eq('lib/billing/*')
-      expect(billing_spec.owners).to match_array(%w[@toptal/billing])
-      expect(billing_spec.line).to eq(8)
-    end
-  end
-
-  describe '#update' do
-    subject { described_class.new(code_owners_file) }
-
-    before  { subject.parse! }
-
-    it 'fails if the line number is wrong' do
-      expect do
-        subject.update line: 1, pattern: '.rubocop*'
-      end.to raise_error(/no patterns with line: 1/)
-    end
-
-    it 'rewrite the owners attributes' do
-      expect do
-        subject.update line: 2, pattern: '.rubocop*', owners: %w[@other]
-      end.to change { subject.owners[0].pattern }
-        .from('.rubocop.yml').to('.rubocop*')
-        .and change { subject.owners[0].owners }
-        .from(['@jonatas']).to(['@other'])
-    end
-  end
-
-  describe '#insert' do
-    subject { described_class.new(code_owners_file) }
-
-    before  { subject.parse! }
-
-    it 'rewrite the owners attributes' do
-      expect do
-        subject.insert after_line: 2, pattern: '.rubocop*', owners: %w[@other]
-      end.to change { subject.owners.length }.from(3).to(4)
-    end
-  end
-
-  describe '#delete' do
-    subject { described_class.new(code_owners_file) }
-
-    before  { subject.parse! }
-
-    it 'rewrite the owners attributes' do
-      expect do
-        subject.delete line: 2
-      end.to change { subject.owners.length }.from(3).to(2)
-    end
-
-    it 'fails with the wrong line number' do
-      expect do
-        subject.delete line: 99_999
-      end.to raise_error("couldn't find record with line 99999")
-    end
-  end
-
-  describe 'persist!' do
-    subject { described_class.new(code_owners_file) }
-
-    before  { subject.parse! }
-
-    it 'writes changes to disk' do
-      subject.update line: 2, pattern: '.rubocop*', owners: %w[@other]
-      subject.update line: 4, owners: %w[@toptal/secops]
-      subject.update line: 8, comments: ['# Billing related']
-
-      expect(code_owners_file).to receive(:content=).with(
-        [
-          '# Linters',
-          '.rubocop* @other',
-          '# Libraries',
-          'Gemfile @toptal/secops',
-          '# Billing related',
-          'lib/billing/* @toptal/billing'
-        ]
-      )
-      subject.persist!
+    it 'parses the content into groups of lines' do
+      expect(file_manager).to receive(:content).and_return(example_content)
+      expect(Code::Ownership::Checker::Group).to receive(:parse).once
+      expect(subject.list).to all(be_kind_of(Code::Ownership::Checker::Group::Line))
     end
   end
 end

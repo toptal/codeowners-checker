@@ -12,29 +12,29 @@ RSpec.describe Code::Ownership::Cli::Config do
   let(:config) { { config: git_config } }
 
   describe '#list' do
-    it 'fetch the team from git config and show it' do
+    it 'fetch the owner from git config and show it' do
       expect(cli).not_to receive(:help)
-      expect(git_config).to receive(:default_team).and_return('@toptal/bootcamp').twice
+      expect(git_config).to receive(:default_owner).and_return('@owner1').twice
       expect do
         cli.list
-      end.to output("default_team: \"@toptal/bootcamp\"\n").to_stdout
+      end.to output("default_owner: \"@owner1\"\n").to_stdout
     end
 
-    it 'asks to provide a proper team name' do
+    it 'asks to provide a proper owner name' do
       expect(cli).to receive(:help)
-      expect(git_config).to receive(:default_team).and_return('').twice
+      expect(git_config).to receive(:default_owner).and_return('').twice
       expect do
         cli.list
-      end.to output("default_team: \"\"\n").to_stdout
+      end.to output("default_owner: \"\"\n").to_stdout
     end
   end
 
-  describe '#team' do
-    it 'config the team in the git config file' do
-      expect(git_config).to receive(:default_team=).with('@toptal/bootcamp')
+  describe '#owner' do
+    it 'config the owner in the git config file' do
+      expect(git_config).to receive(:default_owner=).with('@owner1')
       expect do
-        cli.team('@toptal/bootcamp')
-      end.to output("Default team configured to @toptal/bootcamp\n").to_stdout
+        cli.owner('@owner1')
+      end.to output("Default owner configured to @owner1\n").to_stdout
     end
   end
 end

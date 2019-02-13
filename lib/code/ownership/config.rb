@@ -26,22 +26,23 @@ module Code
       include Git
     end
 
+    # Connfigure and manage the git config file.
     class Config
       def initialize(git = AnonymousGit.new)
         @git = git
       end
 
-      def default_team
-        @git.config('user.team')
+      def default_owner
+        @git.config('user.owner')
       end
 
-      def default_team=(name)
-        @git.config('user.team', name)
+      def default_owner=(name)
+        @git.config('user.owner', name)
       end
 
       def to_h
         {
-          default_team: default_team
+          default_owner: default_owner
         }
       end
     end

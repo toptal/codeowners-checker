@@ -33,10 +33,10 @@ RSpec.describe Code::Ownership::Checker do
     File.open('.github/CODEOWNERS', 'w+') do |file|
       file.puts <<~CONTENT
         # comment ignored
-        .rubocop.yml @jonatas
-        Gemfile @toptal/rogue-one
-        lib/billing/* @toptal/billing
-        lib/shared/* @toptal/billing @toptal/rogue-one
+        .rubocop.yml @owner
+        Gemfile @owner1
+        lib/billing/* @owner2
+        lib/shared/* @owner2 @owner1
       CONTENT
     end
   end
@@ -54,7 +54,7 @@ RSpec.describe Code::Ownership::Checker do
     FileUtils.mkdir_p('lib/shared')
     File.open('lib/shared/file.rb', 'w+') do |file|
       file.puts <<~CONTENT
-        # TODO: some file that multiple teams share
+        # TODO: some file that multiple owners share
       CONTENT
     end
   end
@@ -170,9 +170,9 @@ RSpec.describe Code::Ownership::Checker do
     it 'collets patterns grouped by owner' do
       expect(subject.patterns_by_owner)
         .to eq(
-          '@jonatas' => ['.rubocop.yml'],
-          '@toptal/billing' => ['lib/billing/*', 'lib/shared/*'],
-          '@toptal/rogue-one' => ['Gemfile', 'lib/shared/*']
+          '@owner' => ['.rubocop.yml'],
+          '@owner2' => ['lib/billing/*', 'lib/shared/*'],
+          '@owner1' => ['Gemfile', 'lib/shared/*']
         )
     end
   end
@@ -180,13 +180,13 @@ RSpec.describe Code::Ownership::Checker do
   describe '.changes_with_ownership' do
     subject { described_class.new folder_name, from, to }
 
-    it 'collets changes from a specific team' do
+    it 'collets changes from a specific owner' do
       expect(subject.changes_with_ownership)
-        .to eq('@jonatas' => [], '@toptal/billing' => [], '@toptal/rogue-one' => [])
+        .to eq('@owner' => [], '@owner2' => [], '@owner1' => [])
     end
     context 'when passing a specific owner' do
       it do
-        expect(subject.changes_with_ownership('jonatas')).to be_empty
+        expect(subject.changes_with_ownership('owner')).to be_empty
       end
     end
 
@@ -203,7 +203,7 @@ RSpec.describe Code::Ownership::Checker do
       end
 
       it do
-        expect(subject.changes_with_ownership('@jonatas')).to eq('@jonatas' => ['.rubocop.yml'])
+        expect(subject.changes_with_ownership('@owner')).to eq('@owner' => ['.rubocop.yml'])
       end
     end
 
@@ -221,9 +221,9 @@ RSpec.describe Code::Ownership::Checker do
 
       specify do
         changes_from = subject.method(:changes_with_ownership)
-        expect(changes_from['@jonatas']).to eq('@jonatas' => [])
-        expect(changes_from['@toptal/rogue-one']).to eq('@toptal/rogue-one' => ['lib/shared/file.rb'])
-        expect(changes_from['@toptal/billing']).to eq('@toptal/billing' => ['lib/shared/file.rb'])
+        expect(changes_from['@owner']).to eq('@owner' => [])
+        expect(changes_from['@owner1']).to eq('@owner1' => ['lib/shared/file.rb'])
+        expect(changes_from['@owner2']).to eq('@owner2' => ['lib/shared/file.rb'])
       end
     end
   end
