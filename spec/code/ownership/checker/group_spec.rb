@@ -124,12 +124,23 @@ RSpec.describe Code::Ownership::Checker::Group do
   end
 
   describe '#to_tree' do
-    it 'prints a structure of the groups and subgroups' do
-      expect(group3.to_tree).to eq(
-        [' # BEGIN group 3', ' #comment3', ' ', ' + ##group3.1', ' | pattern7 @owner3',
-         ' \\ ', ' + pattern71 @owner2', ' \\ ', ' + ##group3.2', ' | pattern8 @owner', ' | ',
-         ' | pattern9 @owner', ' \\ ', ' # END group 3']
-      )
+    it 'maps the structure of the groups and subgroups into strings' do
+      expect(group3.to_tree).to eq([
+                                     ' # BEGIN group 3',
+                                     ' #comment3',
+                                     ' ',
+                                     ' + ##group3.1',
+                                     ' | pattern7 @owner3',
+                                     ' \\ ',
+                                     ' + pattern71 @owner2',
+                                     ' \\ ',
+                                     ' + ##group3.2',
+                                     ' | pattern8 @owner',
+                                     ' | ',
+                                     ' | pattern9 @owner',
+                                     ' \\ ',
+                                     ' # END group 3'
+                                   ])
     end
   end
 

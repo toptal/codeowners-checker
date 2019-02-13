@@ -29,6 +29,8 @@ module Code
           @list.flat_map(&:to_content)
         end
 
+        # Returns an array of strings representing the structure of the group.
+        # It indent internal subgroups for readability and debugging purposes.
         def to_tree(indentation = '')
           @list.each_with_index.flat_map do |item, index|
             if indentation.empty?
