@@ -90,7 +90,7 @@ module Code
 
         def remove!
           @list.each(&:remove!)
-          super # TODO: it could be in parentable
+          super
         end
 
         def ==(other)
