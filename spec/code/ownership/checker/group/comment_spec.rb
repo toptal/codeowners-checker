@@ -9,7 +9,6 @@ RSpec.describe Code::Ownership::Checker::Group::Comment do
     {
       '# Comment' => 1,
       '## Comment2' => 2,
-      '  # Comment3' => 1,
       '###' => 3
     }.each do |comment, level|
       context "when the comment is #{comment}" do
@@ -17,6 +16,19 @@ RSpec.describe Code::Ownership::Checker::Group::Comment do
 
         it { is_expected.to eq(level) }
       end
+    end
+  end
+
+  describe '#match?' do
+    subject { match?(line) }
+
+    context 'with valid comment' do
+      it { expect(described_class).to be_match('# header') }
+      it { expect(described_class).to be_match('## sub-header') }
+    end
+
+    context 'with invalid comment' do
+      it { expect(described_class).not_to be_match(' # starting with space') }
     end
   end
 end
