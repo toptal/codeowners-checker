@@ -107,9 +107,10 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
 
     let(:file_manager) { double }
 
-    it 'parses the content into groups' do
+    it 'parses the content into groups of lines' do
       expect(file_manager).to receive(:content).and_return(example_content)
-      expect(Code::Ownership::Checker::Group).to receive(:parse).with(subject.list).once
+      expect(Code::Ownership::Checker::Group).to receive(:parse).once
+      expect(subject.list).to all(be_kind_of(Code::Ownership::Checker::Group::Line))
     end
   end
 end

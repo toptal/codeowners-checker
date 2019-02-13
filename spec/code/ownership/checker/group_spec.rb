@@ -281,4 +281,3 @@ RSpec.describe Code::Ownership::Checker::Group do
     end
   end
 end
-
