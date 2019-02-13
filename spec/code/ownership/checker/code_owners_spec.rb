@@ -102,12 +102,6 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
     example_group.add(group3)
   end
 
-  describe '#to_content' do
-    it 'dumps the group to content' do
-      expect(example_group.to_content).to eq(example_content)
-    end
-  end
-
   describe '#initialize' do
     subject { described_class.new(file_manager) }
 
@@ -115,8 +109,7 @@ RSpec.describe Code::Ownership::Checker::CodeOwners do
 
     it 'parses the content into groups' do
       expect(file_manager).to receive(:content).and_return(example_content)
-      expect(subject.main_group.to_tree).to be == example_group.to_tree
-      expect(subject.main_group).to be == example_group
+      expect(Code::Ownership::Checker::Group).to receive(:parse).with(subject.list).once
     end
   end
 end

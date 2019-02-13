@@ -6,6 +6,7 @@ module Code
   module Ownership
     class Checker
       class Group
+        # Define and manage line type comment.
         class Comment < Line
           def self.match?(line)
             line.lstrip.start_with?('#')

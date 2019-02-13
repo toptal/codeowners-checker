@@ -3,10 +3,11 @@
 require_relative '../checker'
 require_relative 'base'
 
-# frozen_string_literal: true
 module Code
   module Ownership
     module Cli
+      # List changed files. Provide an option to list all the changed files grouped by
+      # the owner of the file or filter them and show only the files owned by default owner.
       class Filter < Base
         option :from, default: 'origin/master'
         option :to, default: 'HEAD'

@@ -7,6 +7,12 @@ module Code
   module Ownership
     class Checker
       class LineGrouper
+        # Create groups and subgroups structure for the lines in the CODEOWNERS file.
+
+        def self.call(group, lines)
+          new(group, lines).call
+        end
+
         def initialize(group, lines)
           @group_buffer = [group]
           @lines = lines

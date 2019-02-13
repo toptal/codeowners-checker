@@ -5,6 +5,7 @@ require_relative 'base'
 module Code
   module Ownership
     module Cli
+      # Provide options for configuring the default owner used for filtering changes.
       class Config < Base
         default_task :list
 

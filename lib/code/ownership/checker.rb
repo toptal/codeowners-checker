@@ -10,10 +10,9 @@ require 'code/ownership/config'
 
 module Code
   module Ownership
-    # Check code ownership is consistent between a git repository and
-    # .github/CODEOWNERS file.
-    # It can compare different what's being changed in the PR and check
-    # if the current files and folders are also being declared in the CODEOWNERS file.
+    # Check if code owners are consistent between a git repository and the CODEOWNERS file.
+    # It compares what's being changed in the PR and check if the current files and folders
+    # are also being declared in the CODEOWNERS file.
     class Checker
       # Check some repo from a reference to another
       def self.check!(repo, from, to)

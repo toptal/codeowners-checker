@@ -10,7 +10,7 @@ between two git revisions.
 ## Usage
 
 
-    $  code-ownership-checker check .
+    $  code-ownership-checker check
 
 Or via code:
 
@@ -19,31 +19,32 @@ Code::Ownership::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
 ```
 ### Configure
 
-    $  code-ownership-checker config --team @toptal/bootcamp
+    $  code-ownership-checker config owner @owner
 
-It will configure a `.default_team` file with your `@toptal/bootcamp` team.
+It will configure `@owner` as a default owner in the config file.
 
 ### Check file consistency
 
-To check if your codeowners is consistent with your current project you can run
+To check if your CODEOWNERS file is consistent with your current project you can run
 this check.
 
     $  code-ownership-checker check
 
-It will suggest files that need to be added or removed to the codeowners file. 
+It will suggest files that need to be added or removed from the CODEOWNERS file and provides
+options to make the necessary changes.
 
 ### Filtering Changes in Pull Requests
 
 If you have a Pull Request to review and you just want to check the changes that
-make sense for your team, you can also filter the changes:
+are meaningful to you, you can also filter the changes:
 
     $  code-ownership-checker filter all
 
-It will use the default team file if you omit parameters:
+It will use the default owner from the configuration if you omit parameters:
 
     $  code-ownership-checker filter
 
-Or you can filter any team as a parameter:
+Or you can filter any owner as a parameter:
 
     $  code-ownership-checker filter by <owner>
 
@@ -55,7 +56,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/code-ownership-checker. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
+Bug reports and pull requests are welcome on GitHub at https://github.com/toptal/code-ownership-checker. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
 ## License
 

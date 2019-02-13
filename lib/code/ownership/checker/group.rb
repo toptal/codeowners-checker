@@ -9,15 +9,20 @@ require 'code/ownership/checker/line_grouper'
 module Code
   module Ownership
     class Checker
+      # Manage the groups content and handle operations on the groups.
       class Group
         include Parentable
+
+        def self.parse(lines)
+          new.parse(lines)
+        end
 
         def initialize
           @list = []
         end
 
         def parse(lines)
-          LineGrouper.new(self, lines).call
+          LineGrouper.call(self, lines)
         end
 
         def to_content
@@ -103,7 +108,7 @@ module Code
         end
 
         def new_line_index(pattern)
-          patterns = @list.select { |item| item.is_a?(Pattern) }
+          patterns = @list.grep(Pattern)
           new_patterns_sorted = patterns.dup.push(pattern).sort
           new_pattern_index = new_patterns_sorted.index(pattern)
 

@@ -6,6 +6,7 @@ module Code
   module Ownership
     class Checker
       class Group
+        # Defines and manages line type pattern.
         class Pattern < Line
           attr_accessor :pattern, :owners
 

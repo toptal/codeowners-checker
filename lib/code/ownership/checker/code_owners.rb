@@ -6,13 +6,14 @@ require 'code/ownership/checker/group/comment'
 module Code
   module Ownership
     class Checker
+      # Manage CODEOWNERS file reading and re-writing.
       class CodeOwners
         attr_reader :list, :main_group, :file_manager
 
         def initialize(file_manager)
           @file_manager = file_manager
           parse_file
-          @main_group = Group.new.parse(@list)
+          @main_group = Group.parse(@list)
         end
 
         def persist!

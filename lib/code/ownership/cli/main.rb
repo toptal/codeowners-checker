@@ -53,10 +53,11 @@ module Code
 
           owner = ask('File owner(s): ')
 
-          return if owner.empty?
-
           line = "#{file} #{owner}"
           pattern = Code::Ownership::Checker::Group::Line.build(line)
+
+          return unless pattern.pattern?
+
           subgroups = @checker.codeowners.main_group.subgroups_owned_by(pattern.owner)
           add_pattern(pattern, subgroups)
 

@@ -6,6 +6,8 @@ module Code
   module Ownership
     class Checker
       class Group
+        # It sorts lines from CODEOWNERS file to different line types and holds
+        # shared methods for all lines.
         class Line
           include Parentable
 

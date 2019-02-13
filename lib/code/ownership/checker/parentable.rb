@@ -14,7 +14,7 @@ module Code
 
         def remove!
           parents.each { |parent| parent.remove(self) }
-          parents.delete(self)
+          parents.clear
         end
       end
     end

@@ -26,6 +26,7 @@ module Code
       include Git
     end
 
+    # Connfigure and manage the git config file.
     class Config
       def initialize(git = AnonymousGit.new)
         @git = git

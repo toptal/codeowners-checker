@@ -10,8 +10,44 @@ RSpec.describe Code::Ownership::Checker::Group do
   let(:no_name) { described_class.new }
   let(:group2) { described_class.new }
   let(:group3) { described_class.new }
-  let(:pattern) { Code::Ownership::Checker::Group::Line.build('pattern5 @owner') }
+  let(:pattern) { Code::Ownership::Checker::Group::Line.build('pattern4 @owner') }
   let(:pattern1) { Code::Ownership::Checker::Group::Line.build('pattern @owner3') }
+
+  let(:example_content) do
+    [
+      '#comment1',
+      '#comment2',
+      '',
+      '',
+      '#group1',
+      'pattern1 @owner',
+      'pattern2 @owner',
+      'pattern5 @owner',
+      '',
+      'pattern10 @owner2',
+      'pattern11 @owner2',
+      '',
+      '#group2',
+      'pattern4 @owner',
+      'pattern5 @owner2',
+      'pattern6 @owner @owner2',
+      '',
+      '# BEGIN group 3',
+      '#comment3',
+      '',
+      '##group3.1',
+      'pattern7 @owner3',
+      '',
+      'pattern71 @owner2',
+      '',
+      '##group3.2',
+      'pattern8 @owner',
+      '',
+      'pattern9 @owner',
+      '',
+      '# END group 3'
+    ]
+  end
 
   def add_content(group, text)
     group.add(Code::Ownership::Checker::Group::Line.build(text))
@@ -27,7 +63,7 @@ RSpec.describe Code::Ownership::Checker::Group do
     add_content(group1, '#group1')
     add_content(group1, 'pattern1 @owner')
     add_content(group1, 'pattern2 @owner')
-    add_content(group1, 'pattern3 @owner')
+    add_content(group1, 'pattern5 @owner')
     add_content(group1, '')
     subject.add(group1)
 
@@ -46,24 +82,55 @@ RSpec.describe Code::Ownership::Checker::Group do
     add_content(group3, '# BEGIN group 3')
     add_content(group3, '#comment3')
     add_content(group3, '')
-    group3_1 = described_class.new
-    add_content(group3_1, '##group3.1')
-    add_content(group3_1, 'pattern7 @owner3')
-    add_content(group3_1, '')
-    group3.add(group3_1)
+    group31 = described_class.new
+    add_content(group31, '##group3.1')
+    add_content(group31, 'pattern7 @owner3')
+    add_content(group31, '')
+    group3.add(group31)
     group3_no_name = described_class.new
     add_content(group3_no_name, 'pattern71 @owner2')
     add_content(group3_no_name, '')
     group3.add(group3_no_name)
-    group3_2 = described_class.new
-    add_content(group3_2, '##group3.2')
-    add_content(group3_2, 'pattern8 @owner')
-    add_content(group3_2, '')
-    add_content(group3_2, 'pattern9 @owner')
-    add_content(group3_2, '')
-    group3.add(group3_2)
+    group32 = described_class.new
+    add_content(group32, '##group3.2')
+    add_content(group32, 'pattern8 @owner')
+    add_content(group32, '')
+    add_content(group32, 'pattern9 @owner')
+    add_content(group32, '')
+    group3.add(group32)
     add_content(group3, '# END group 3')
     subject.add(group3)
+  end
+
+  describe '#parse' do
+    let(:lines) { [] }
+    let(:main_group) { described_class.new }
+
+    before do
+      example_content.each { |text| lines << Code::Ownership::Checker::Group::Line.build(text) }
+    end
+
+    it 'parses lines from codeowners file to groups and subgroups' do
+      main_group.parse(lines)
+      expect(main_group).to eq(subject)
+      expect(main_group.to_content).to eq(example_content)
+    end
+  end
+
+  describe '#to_content' do
+    it 'dumps the group to content' do
+      expect(subject.to_content).to eq(example_content)
+    end
+  end
+
+  describe '#to_tree' do
+    it 'prints a structure of the groups and subgroups' do
+      expect(group3.to_tree).to eq(
+        [' # BEGIN group 3', ' #comment3', ' ', ' + ##group3.1', ' | pattern7 @owner3',
+         ' \\ ', ' + pattern71 @owner2', ' \\ ', ' + ##group3.2', ' | pattern8 @owner', ' | ',
+         ' | pattern9 @owner', ' \\ ', ' # END group 3']
+      )
+    end
   end
 
   describe '#owner' do
@@ -108,8 +175,8 @@ RSpec.describe Code::Ownership::Checker::Group do
     it 'adds new line to the group' do
       group1.add(pattern)
       expect(group1.to_content).to eq(
-        ['#group1', 'pattern1 @owner', 'pattern2 @owner', 'pattern3 @owner',
-         '', 'pattern5 @owner']
+        ['#group1', 'pattern1 @owner', 'pattern2 @owner', 'pattern5 @owner',
+         '', 'pattern4 @owner']
       )
     end
   end
@@ -120,12 +187,12 @@ RSpec.describe Code::Ownership::Checker::Group do
         group1.insert(pattern)
         expect(group1.to_content).to eq(
           ['#group1', 'pattern1 @owner', 'pattern2 @owner',
-           'pattern3 @owner', 'pattern5 @owner', '']
+           'pattern4 @owner', 'pattern5 @owner', '']
         )
       end
     end
 
-    context 'when inserting in a first row of a group' do
+    context 'when inserting in the first row of a group' do
       it 'inserts the pattern in the first row' do
         no_name.insert(pattern1)
         expect(no_name.to_content).to eq(
@@ -138,7 +205,7 @@ RSpec.describe Code::Ownership::Checker::Group do
       it 'inserts new pattern to the main group' do
         group3.insert(pattern)
         expect(group3.to_content).to eq(
-          ['# BEGIN group 3', '#comment3', 'pattern5 @owner', '', '##group3.1',
+          ['# BEGIN group 3', '#comment3', 'pattern4 @owner', '', '##group3.1',
            'pattern7 @owner3', '', 'pattern71 @owner2', '', '##group3.2', 'pattern8 @owner',
            '', 'pattern9 @owner', '', '# END group 3']
         )
@@ -147,30 +214,71 @@ RSpec.describe Code::Ownership::Checker::Group do
   end
 
   describe '#remove' do
-    context 'when group contains other patterns' do
-      before { group1.insert(pattern) }
+    let(:group4) { described_class.new }
+    let(:comment) { Code::Ownership::Checker::Group::Line.build('#comment') }
+    let(:unrecognized_line) { Code::Ownership::Checker::Group::Line.build('unrecognized_line') }
+    let(:empty) { Code::Ownership::Checker::Group::Line.build('') }
 
-      it 'removes the pattern from the group' do
-        group1.remove(pattern)
-        expect(group1.to_content).to eq(
-          ['#group1', 'pattern1 @owner', 'pattern2 @owner', 'pattern3 @owner', '']
+    context 'when the group contains more than one patterns' do
+      before do
+        add_content(group4, '#Group4')
+        group4.add(comment)
+        group4.add(pattern)
+        group4.add(unrecognized_line)
+        add_content(group4, 'pattern5 @owner')
+        group4.add(empty)
+        subject.add(group4)
+      end
+
+      it 'removes pattern from the group' do
+        group4.remove(pattern)
+        expect(group4.to_content).to eq(
+          ['#Group4', '#comment', 'unrecognized_line', 'pattern5 @owner', '']
+        )
+      end
+
+      it 'removes comment from the group' do
+        group4.remove(comment)
+        expect(group4.to_content).to eq(
+          ['#Group4', 'pattern4 @owner', 'unrecognized_line', 'pattern5 @owner', '']
+        )
+      end
+
+      it 'removes empty line from the group' do
+        group4.remove(empty)
+        expect(group4.to_content).to eq(
+          ['#Group4', '#comment', 'pattern4 @owner', 'unrecognized_line', 'pattern5 @owner']
+        )
+      end
+
+      it 'removes unrecognized line from the group' do
+        group4.remove(unrecognized_line)
+        expect(group4.to_content).to eq(
+          ['#Group4', '#comment', 'pattern4 @owner', 'pattern5 @owner', '']
         )
       end
     end
 
     context 'when there is only one pattern in the group' do
-      let(:group4) { described_class.new }
+      let(:group41) { described_class.new }
 
       before do
         add_content(group4, '#Group4')
         group4.add(pattern)
+        group4.add(empty)
         subject.add(group4)
+        add_content(group41, '##Group4_1')
+        group41.add(pattern1)
+        group4.add(group41)
       end
 
-      it 'removes the pattern and the title of the group' do
-        group4.remove(pattern)
-        expect(group4.to_content).to eq([])
+      it 'removes the pattern, the title and the group from the parent group' do
+        group41.remove(pattern1)
+        expect(group41.to_content).to eq([])
+        expect(group41.parents).to eq(Set[])
+        expect(group4.to_content).to eq(['#Group4', 'pattern4 @owner', ''])
       end
     end
   end
 end
+
