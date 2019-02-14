@@ -1,6 +1,25 @@
 # frozen_string_literal: true
 
-require 'git'
+Git::Lib.class_eval do
+  def config_set(name, value)
+    command('config',  [name, value])
+  rescue Git::GitExecuteError
+    command('config',  ['--add', name, value])
+  end
+
+  def config_get(name)
+    do_get = proc do |_path|
+      command('config', ['--get', name])
+    end
+
+    if @git_dir
+      Dir.chdir(@git_dir, &do_get)
+    else
+      do_get.call
+    end
+  end
+end
+
 module Codeowners
   class AnonymousGit
     include Git

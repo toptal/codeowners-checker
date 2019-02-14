@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'base'
+
 module Codeowners
   module Cli
     # Provide options for configuring the default owner used for filtering changes.

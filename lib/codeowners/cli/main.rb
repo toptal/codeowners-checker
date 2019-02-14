@@ -1,11 +1,15 @@
 # frozen_string_literal: true
 
+require 'fuzzy_match'
+
+require_relative '../checker'
 require_relative 'base'
+require_relative 'config'
 require_relative 'filter'
 
 module Codeowners
   module Cli
-    # Command Line Interface used by bin/code-owners-checker.
+    # Command Line Interface used by bin/codeowners-checker.
     class Main < Base
       LABEL = { missing_ref: 'Missing references', useless_pattern: 'No files matching with the pattern' }.freeze
       option :from, default: 'origin/master'

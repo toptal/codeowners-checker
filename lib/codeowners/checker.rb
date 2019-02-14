@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
+require 'git'
 require 'logger'
+
+require_relative 'checker/code_owners'
+require_relative 'checker/file_as_array'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.

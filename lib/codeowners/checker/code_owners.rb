@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'group'
+
 module Codeowners
   class Checker
     # Manage CODEOWNERS file reading and re-writing.

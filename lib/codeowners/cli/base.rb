@@ -2,7 +2,6 @@
 
 require 'thor'
 
-require_relative 'config'
 require_relative '../config'
 
 module Codeowners
@@ -33,4 +32,3 @@ module Codeowners
     end
   end
 end
-

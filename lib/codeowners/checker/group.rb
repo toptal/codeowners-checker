@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 
 require_relative 'line_grouper'
+require_relative 'parentable'
+require_relative 'group/line'
+
 module Codeowners
   class Checker
     # Manage the groups content and handle operations on the groups.
