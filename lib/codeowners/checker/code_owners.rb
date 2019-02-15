@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'group'
+require_relative 'array'
 
 module Codeowners
   class Checker
@@ -19,11 +20,11 @@ module Codeowners
       end
 
       def persist!
-        file_manager.content = @list.map(&:to_content)
+        file_manager.content = to_content
       end
 
       def remove(content)
-        @list.delete(content)
+        @list.safe_delete(content)
       end
 
       def insert_after(previous_line, line)
@@ -34,6 +35,10 @@ module Codeowners
 
         line.parent_file = self
         @list.insert(index, line)
+      end
+
+      def to_content
+        @list.map(&:to_content)
       end
 
       private

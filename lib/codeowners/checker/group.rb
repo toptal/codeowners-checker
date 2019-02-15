@@ -3,6 +3,7 @@
 require_relative 'line_grouper'
 require_relative 'parentable'
 require_relative 'group/line'
+require_relative 'array'
 
 module Codeowners
   class Checker
@@ -89,7 +90,7 @@ module Codeowners
       end
 
       def remove(line)
-        @list.delete(line)
+        @list.safe_delete(line)
         remove! unless @list.any?(Pattern)
       end
 
