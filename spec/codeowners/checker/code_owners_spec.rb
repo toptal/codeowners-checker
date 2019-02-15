@@ -6,6 +6,8 @@ require 'tmpdir'
 require 'codeowners/checker/code_owners'
 
 RSpec.describe Codeowners::Checker::CodeOwners do
+  let(:pattern) { Codeowners::Checker::Group::Line.build('pattern @owner') }
+
   let(:example_content) do
     [
       '#comment1',
@@ -13,7 +15,7 @@ RSpec.describe Codeowners::Checker::CodeOwners do
       '',
       '',
       '#group1',
-      'pattern1 @owner',
+      'pattern @owner',
       'pattern2 @owner',
       'pattern3 @owner',
       '',
@@ -58,7 +60,7 @@ RSpec.describe Codeowners::Checker::CodeOwners do
 
     group1 = Codeowners::Checker::Group.new
     add_content(group1, '#group1')
-    add_content(group1, 'pattern1 @owner')
+    group1.add(pattern)
     add_content(group1, 'pattern2 @owner')
     add_content(group1, 'pattern3 @owner')
     add_content(group1, '')
@@ -109,8 +111,45 @@ RSpec.describe Codeowners::Checker::CodeOwners do
 
     it 'parses the content into groups of lines' do
       expect(file_manager).to receive(:content).and_return(example_content)
-      expect(Codeowners::Checker::Group).to receive(:parse).once
       expect(subject.list).to all(be_kind_of(Codeowners::Checker::Group::Line))
+    end
+  end
+
+  describe '#remove' do
+    subject { described_class.new(file_manager) }
+
+    let(:file_manager) { double }
+
+    it 'removes line from the list' do
+      expect(file_manager).to receive(:content).and_return(example_content)
+      subject.remove(pattern)
+      expect(subject.list.map(&:to_content)).to eq(
+        ['#comment1', '#comment2', '', '', '#group1', 'pattern2 @owner', 'pattern3 @owner',
+         '', 'pattern10 @owner2', 'pattern11 @owner2', '', '#group2', 'pattern4 @owner1',
+         'pattern5 @owner2', 'pattern6 @owner1 @owner2', '', '# BEGIN group 3', '#comment3',
+         '', '##group3.1', 'pattern7 @owner3', '', 'pattern71 @owner2', '', '##group3.2',
+         'pattern8 @owner', '', 'pattern9 @owner', '', '# END group 3']
+      )
+    end
+  end
+
+  describe '#insert_after' do
+    subject { described_class.new(file_manager) }
+
+    let(:file_manager) { double }
+    let(:new_line) { Codeowners::Checker::Group::Line.build('pattern1 @owner') }
+
+    it 'inserts new record to codeowners after particular line' do
+      expect(file_manager).to receive(:content).and_return(example_content)
+      subject.insert_after(pattern, new_line)
+      expect(subject.list.map(&:to_content)).to eq(
+        ['#comment1', '#comment2', '', '', '#group1', 'pattern @owner', 'pattern1 @owner',
+         'pattern2 @owner', 'pattern3 @owner', '', 'pattern10 @owner2', 'pattern11 @owner2',
+         '', '#group2', 'pattern4 @owner1', 'pattern5 @owner2', 'pattern6 @owner1 @owner2',
+         '', '# BEGIN group 3', '#comment3', '', '##group3.1', 'pattern7 @owner3', '',
+         'pattern71 @owner2', '', '##group3.2', 'pattern8 @owner', '', 'pattern9 @owner', '',
+         '# END group 3']
+      )
     end
   end
 end

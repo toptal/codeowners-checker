@@ -26,6 +26,17 @@ RSpec.describe Codeowners::Checker::Group::Line do
     end
   end
 
+  describe '.subclasses' do
+    let(:line_subclasses) do
+      ObjectSpace.each_object(::Class).select { |klass| klass < described_class } -
+      [Codeowners::Checker::Group::UnrecognizedLine]
+    end
+
+    it 'includes all subclasses except of unrecognized line' do
+      expect(described_class.subclasses).to match_array(line_subclasses)
+    end
+  end
+
   describe '#to_s' do
     subject { described_class.build(line).to_s }
 

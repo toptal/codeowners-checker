@@ -13,6 +13,7 @@ module Codeowners
         end
 
         def initialize(line)
+          super
           parse(line)
         end
 

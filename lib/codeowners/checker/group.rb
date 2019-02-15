@@ -10,11 +10,12 @@ module Codeowners
     class Group
       include Parentable
 
-      def self.parse(lines)
-        new.parse(lines)
+      def self.parse(lines, parent_file = nil)
+        new(parent_file).parse(lines)
       end
 
-      def initialize
+      def initialize(parent_file = nil)
+        @parent_file = parent_file
         @list = []
       end
 
@@ -68,20 +69,27 @@ module Codeowners
         @list.first.to_s
       end
 
-      def add(content)
-        content.parents << self
-        @list << content
+      def create_subgroup
+        group = Group.new
+        group.parent_file = parent_file
+        @list << group
+        group
       end
 
-      def insert(pattern)
-        index = new_line_index(pattern)
-
-        pattern.parents << self
-        @list.insert(index, pattern)
+      def add(line)
+        previous_line = @list.last
+        insert_after(previous_line, line)
+        parent_file&.insert_after(previous_line, line)
       end
 
-      def remove(content)
-        @list.delete(content)
+      def insert(line)
+        previous_line = find_previous_line(line)
+        insert_after(previous_line, line)
+        parent_file&.insert_after(previous_line, line)
+      end
+
+      def remove(line)
+        @list.delete(line)
         remove! unless @list.any?(Pattern)
       end
 
@@ -106,17 +114,34 @@ module Codeowners
         end.compact
       end
 
-      def new_line_index(pattern)
+      def find_previous_line(line)
         patterns = @list.grep(Pattern)
-        new_patterns_sorted = patterns.dup.push(pattern).sort
-        new_pattern_index = new_patterns_sorted.index(pattern)
+        new_patterns_sorted = patterns.dup.push(line).sort
+        new_pattern_index = new_patterns_sorted.index(line)
 
         if new_pattern_index > 0
-          previous_line = new_patterns_sorted[new_pattern_index - 1]
-          @list.index(previous_line) + 1
+          new_patterns_sorted[new_pattern_index - 1]
         else
-          @list.index { |item| !item.is_a?(Comment) } || 0
+          find_last_line_of_initial_comments
         end
+      end
+
+      def find_last_line_of_initial_comments
+        @list.inject(nil) do |previous, item|
+          if item.is_a?(Comment)
+            item
+          else
+            return previous
+          end
+        end
+      end
+
+      def insert_after(previous_line, line)
+        previous_index = @list.index(previous_line)
+        index = previous_index ? previous_index + 1 : 0
+
+        line.parent_group = self
+        @list.insert(index, line)
       end
     end
   end

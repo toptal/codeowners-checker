@@ -3,13 +3,13 @@
 module Codeowners
   class Checker
     module Parentable
-      def parents
-        @parents ||= Set.new
-      end
+      attr_accessor :parent_group, :parent_file
 
       def remove!
-        parents.each { |parent| parent.remove(self) }
-        parents.clear
+        parent_group&.remove(self)
+        parent_file&.remove(self)
+
+        self.parent_group = self.parent_file = nil
       end
     end
   end

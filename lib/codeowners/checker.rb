@@ -11,11 +11,6 @@ module Codeowners
   # It compares what's being changed in the PR and check if the current files and folders
   # are also being declared in the CODEOWNERS file.
   class Checker
-    # Check some repo from a reference to another
-    def self.check!(repo, from, to)
-      new(repo, from, to).check!
-    end
-
     attr_accessor :when_useless_pattern, :when_new_file
 
     # Get repo metadata and compare with the owners
@@ -24,6 +19,10 @@ module Codeowners
       @repo_dir = repo
       @from = from || 'HEAD'
       @to = to
+    end
+
+    def transform_line_procs
+      @transform_line_procs ||= []
     end
 
     def changes_to_analyze
@@ -35,6 +34,8 @@ module Codeowners
     end
 
     def check!
+      codeowners
+      main_group
       {
         missing_ref: missing_reference,
         useless_pattern: useless_pattern
@@ -97,15 +98,22 @@ module Codeowners
     end
 
     def codeowners
-      @codeowners ||= CodeOwners.new(FileAsArray.new(codeowners_file))
+      @codeowners ||= CodeOwners.new(
+        FileAsArray.new(codeowners_filename),
+        transform_line_procs: transform_line_procs
+      )
     end
 
-    def codeowners_file
+    def main_group
+      @main_group ||= Group.parse(codeowners.list, codeowners)
+    end
+
+    def codeowners_filename
       File.join(@repo_dir, '.github', 'CODEOWNERS')
     end
 
     def commit_changes!
-      @git.add(codeowners_file)
+      @git.add(codeowners_filename)
       @git.commit('Fix pattern :robot:')
     end
   end

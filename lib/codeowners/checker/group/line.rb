@@ -10,11 +10,15 @@ module Codeowners
       class Line
         include Parentable
 
-        def self.build(line)
-          [Empty, GroupBeginComment, GroupEndComment, Comment, Pattern].each do |klass|
+        def self.build(line, transform_line_procs: nil)
+          subclasses.each do |klass|
             return klass.new(line) if klass.match?(line)
           end
           UnrecognizedLine.new(line)
+        end
+
+        def self.subclasses
+          [Empty, GroupBeginComment, GroupEndComment, Comment, Pattern]
         end
 
         def initialize(line)
