@@ -39,7 +39,7 @@ module Codeowners
         @checker = Codeowners::Checker.new(@repo, options[:from], to)
         @checker.when_useless_pattern = method(:suggest_fix_for)
         @checker.when_new_file = method(:suggest_add_to_codeowners)
-        @checker.transform_line_procs << method(:unrecognized_line)
+        @checker.transformers << method(:unrecognized_line)
       end
 
       def write_codeowners
@@ -50,24 +50,24 @@ module Codeowners
         return unless yes?("File added: #{file.inspect}. Add owner to CODEOWNERS?")
 
         owner = ask('File owner(s): ')
-        pattern = create_new_pattern(file, owner)
+        new_line = create_new_pattern(file, owner)
 
-        unless pattern.pattern?
+        unless new_line.pattern?
           puts "#{owner.inspect} is not a valid owner name."
           return
         end
 
-        subgroups = @checker.main_group.subgroups_owned_by(pattern.owner)
-        add_pattern(pattern, subgroups)
+        subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
+        add_pattern(new_line, subgroups)
 
         @codeowners_changed = true
       end
 
       def create_new_pattern(file, owner)
         line = "#{file} #{owner}"
-        pattern = Codeowners::Checker::Group::Line.build(line)
-        pattern.parent_file = @checker.codeowners
-        pattern
+        new_line = Codeowners::Checker::Group::Line.build(line)
+        new_line.parent_file = @checker.codeowners
+        new_line
       end
 
       def add_pattern(pattern, subgroups)
@@ -113,7 +113,7 @@ module Codeowners
         when 'i' then nil
         when 'y'
           line.pattern = suggestion
-        when 'w'
+        when 'e'
           pattern_change(line)
         when 'd'
           line.remove!
@@ -121,33 +121,33 @@ module Codeowners
       end
 
       def make_suggestion(suggestion)
-        ask(<<~QUESTION, limited_to: %w[y i w d])
+        ask(<<~QUESTION, limited_to: %w[y i e d])
           Replace with: #{suggestion}?
           (y) yes
           (i) ignore
-          (w) write new pattern
+          (e) edit the pattern
           (d) delete the pattern
         QUESTION
       end
 
       def pattern_fix(line)
         case pattern_suggest_fixing
-        when 'w' then pattern_change(line)
+        when 'e' then pattern_change(line)
         when 'i' then nil
         when 'd' then line.remove!
         end
       end
 
       def pattern_suggest_fixing
-        ask(<<~QUESTION, limited_to: %w[i w d])
-          (w) write new pattern
+        ask(<<~QUESTION, limited_to: %w[i e d])
+          (e) edit the pattern
           (d) delete the pattern
           (i) ignore
         QUESTION
       end
 
       def pattern_change(line)
-        new_pattern = ask('New pattern: ')
+        new_pattern = ask("Replace pattern #{line.pattern.inspect} with: ")
         return if new_pattern.empty?
 
         line.pattern = new_pattern
@@ -165,7 +165,7 @@ module Codeowners
 
       def unrecognized_line_suggest_fixing(line)
         ask(<<~QUESTION, limited_to: %w[y i d])
-          #{line.to_s.inspect} is in unrecognized format. Please enter valid line.
+          #{line.to_s.inspect} is in unrecognized format. Would you like to edit?
           (y) yes
           (i) ignore
           (d) delete the line

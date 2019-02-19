@@ -21,8 +21,8 @@ module Codeowners
       @to = to
     end
 
-    def transform_line_procs
-      @transform_line_procs ||= []
+    def transformers
+      @transformers ||= []
     end
 
     def changes_to_analyze
@@ -100,7 +100,7 @@ module Codeowners
     def codeowners
       @codeowners ||= CodeOwners.new(
         FileAsArray.new(codeowners_filename),
-        transform_line_procs: transform_line_procs
+        transformers: transformers
       )
     end
 

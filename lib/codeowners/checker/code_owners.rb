@@ -9,11 +9,11 @@ module Codeowners
     class CodeOwners
       attr_reader :list, :file_manager, :transform_line_procs
 
-      def initialize(file_manager, transform_line_procs: nil)
+      def initialize(file_manager, transformers: nil)
         @file_manager = file_manager
         @transform_line_procs = [
           method(:build_line),
-          *(transform_line_procs || []),
+          *transformers,
           method(:assign_line_parent)
         ]
         parse_file
