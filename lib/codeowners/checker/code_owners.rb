@@ -54,7 +54,7 @@ module Codeowners
       end
 
       def build_line(line)
-        Codeowners::Checker::Group::Line.build(line)
+        Codeowners::Checker::Group::Line.build(line, self)
       end
 
       def assign_line_parent(line)

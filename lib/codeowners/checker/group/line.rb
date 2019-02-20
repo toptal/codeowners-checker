@@ -8,11 +8,11 @@ module Codeowners
       class Line
         attr_accessor :parent
 
-        def self.build(line, transform_line_procs: nil)
+        def self.build(line, linked_to, transform_line_procs: nil)
           subclasses.each do |klass|
-            return klass.new(line) if klass.match?(line)
+            return klass.new(line, linked_to) if klass.match?(line)
           end
-          UnrecognizedLine.new(line)
+          UnrecognizedLine.new(line, linked_to)
         end
 
         def self.subclasses

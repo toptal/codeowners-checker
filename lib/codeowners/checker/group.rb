@@ -69,8 +69,7 @@ module Codeowners
         @list.first.to_s
       end
 
-      def create_subgroup
-        group = new_group
+      def add_subgroup group = Group.new
         @list << group
         group
       end
@@ -93,11 +92,11 @@ module Codeowners
       def remove!
         @list.each(&:remove!)
         parent&.remove(self)
-        parent = nil
+        self.parent = nil
       end
 
       def ==(other)
-        other.is_kind_of?(Group) && other.list == list
+        other.kind_of?(Group) && other.list == list
       end
 
       protected

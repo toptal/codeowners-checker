@@ -82,7 +82,7 @@ module Codeowners
       end
 
       def new_group
-        group = current_group.create_subgroup
+        group = current_group.add_subgroup
         group_buffer << group
       end
 

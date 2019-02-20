@@ -8,12 +8,16 @@ module Codeowners
       # It sorts lines from CODEOWNERS file to different line types and holds
       # shared methods for all lines.
       class LinkedLine < Line
-        attr_accessor :parent_file
+
+        def initialize content, linked_to
+          @linked_to = linked_to
+          super(content)
+        end
 
         def remove!
           super
-          parent_file&.remove(self)
-          parent_file = nil
+          @linked_to&.remove(self)
+          @linked_to = nil
         end
       end
     end
