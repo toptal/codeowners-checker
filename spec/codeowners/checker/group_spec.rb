@@ -298,7 +298,7 @@ RSpec.describe Codeowners::Checker::Group do
       it 'removes the pattern, the title and the group from the parent group' do
         group41.remove(pattern1)
         expect(group41.to_content).to eq([])
-        expect(group41.parent_group).to eq(nil)
+        expect(group41.parent).to eq(nil)
         expect(group4.to_content).to eq(['#Group4', 'pattern4 @owner', ''])
       end
     end

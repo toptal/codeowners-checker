@@ -17,7 +17,7 @@ module Codeowners
 
       def initialize(parent_file)
         @parent_file = parent_file
-        super
+        super()
       end
 
       def remove(line)

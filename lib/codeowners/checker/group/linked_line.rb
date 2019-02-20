@@ -13,7 +13,7 @@ module Codeowners
         def remove!
           super
           parent_file&.remove(self)
-          parent_file = nil
+          self.parent_file = nil
         end
       end
     end

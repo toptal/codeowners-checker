@@ -93,11 +93,11 @@ module Codeowners
       def remove!
         @list.each(&:remove!)
         parent&.remove(self)
-        parent = nil
+        self.parent = nil
       end
 
       def ==(other)
-        other.is_kind_of?(Group) && other.list == list
+        other.kind_of?(Group) && other.list == list
       end
 
       protected
