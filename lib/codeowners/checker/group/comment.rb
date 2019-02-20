@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative 'line'
+require_relative 'linked_line'
 
 module Codeowners
   class Checker
     class Group
       # Define and manage comment line.
-      class Comment < Line
+      class Comment < LinkedLine
         # Matches if the line is a comment.
         # @return [Boolean] if the line start with `#`
         def self.match?(line)

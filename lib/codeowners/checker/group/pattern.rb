@@ -1,10 +1,12 @@
 # frozen_string_literal: true
 
+require_relative 'linked_line'
+
 module Codeowners
   class Checker
     class Group
       # Defines and manages line type pattern.
-      class Pattern < Line
+      class Pattern < LinkedLine
         attr_accessor :pattern, :owners
 
         def self.match?(line)

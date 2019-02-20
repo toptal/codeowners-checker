@@ -9,14 +9,13 @@ module Codeowners
   class Checker
     # Manage the groups content and handle operations on the groups.
     class Group
-      include Parentable
+      attr_accessor :parent
 
-      def self.parse(lines, parent_file = nil)
-        new(parent_file).parse(lines)
+      def self.parse(lines)
+        new.parse(lines)
       end
 
-      def initialize(parent_file = nil)
-        @parent_file = parent_file
+      def initialize
         @list = []
       end
 
@@ -71,8 +70,7 @@ module Codeowners
       end
 
       def create_subgroup
-        group = Group.new
-        group.parent_file = parent_file
+        group = new_group
         @list << group
         group
       end
@@ -80,13 +78,11 @@ module Codeowners
       def add(line)
         previous_line = @list.last
         insert_after(previous_line, line)
-        parent_file&.insert_after(previous_line, line)
       end
 
       def insert(line)
         previous_line = find_previous_line(line)
         insert_after(previous_line, line)
-        parent_file&.insert_after(previous_line, line)
       end
 
       def remove(line)
@@ -96,11 +92,12 @@ module Codeowners
 
       def remove!
         @list.each(&:remove!)
-        super
+        parent&.remove(self)
+        parent = nil
       end
 
       def ==(other)
-        other.is_a?(Group) && other.list == list
+        other.is_kind_of?(Group) && other.list == list
       end
 
       protected
@@ -108,6 +105,10 @@ module Codeowners
       attr_accessor :list
 
       private
+
+      def new_group
+        self.class.new
+      end
 
       def all_owners
         @list.flat_map do |item|
@@ -141,7 +142,7 @@ module Codeowners
         previous_index = @list.index(previous_line)
         index = previous_index ? previous_index + 1 : 0
 
-        line.parent_group = self
+        line.parent = self
         @list.insert(index, line)
       end
     end

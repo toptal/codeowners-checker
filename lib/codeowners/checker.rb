@@ -5,6 +5,7 @@ require 'logger'
 
 require_relative 'checker/code_owners'
 require_relative 'checker/file_as_array'
+require_relative 'checker/linked_group'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.
@@ -105,7 +106,7 @@ module Codeowners
     end
 
     def main_group
-      @main_group ||= Group.parse(codeowners.list, codeowners)
+      @main_group ||= LinkedGroup.parse(codeowners.list, codeowners)
     end
 
     def codeowners_filename
