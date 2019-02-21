@@ -65,9 +65,7 @@ module Codeowners
 
       def create_new_pattern(file, owner)
         line = "#{file} #{owner}"
-        new_line = Codeowners::Checker::Group::Line.build(line)
-        new_line.parent_file = @checker.codeowners
-        new_line
+        Codeowners::Checker::Group::Line.build(line)
       end
 
       def add_pattern(pattern, subgroups)
@@ -96,7 +94,7 @@ module Codeowners
         search = FuzzyMatch.new(line.suggest_files_for_pattern)
         suggestion = search.find(line.pattern)
 
-        puts "Pattern #{line.pattern} doesn't match."
+        puts "Pattern #{line.pattern.inspect} doesn't match."
 
         # TODO: Handle duplicate patterns.
         if suggestion

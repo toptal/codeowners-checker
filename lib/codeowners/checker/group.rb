@@ -60,8 +60,8 @@ module Codeowners
 
       # Owners are ordered by the amount of occurrences
       def owners
-        all_owners.group_by(&:itself).sort_by do |_owner, occurences|
-          -occurences.count
+        all_owners.group_by(&:itself).sort_by do |_owner, occurrences|
+          -occurrences.count
         end.map(&:first)
       end
 

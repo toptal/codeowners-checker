@@ -35,8 +35,6 @@ module Codeowners
     end
 
     def check!
-      codeowners
-      main_group
       {
         missing_ref: missing_reference,
         useless_pattern: useless_pattern
