@@ -7,59 +7,47 @@ module Codeowners
   class Checker
     # Manage CODEOWNERS file reading and re-writing.
     class CodeOwners
-      attr_reader :list, :file_manager, :transform_line_procs
+      include Enumerable
+
+      attr_reader :file_manager, :transform_line_procs
 
       def initialize(file_manager, transformers: nil)
         @file_manager = file_manager
         @transform_line_procs = [
           method(:build_line),
-          *transformers,
-          method(:assign_line_parent)
+          *transformers
         ]
-        parse_file
       end
 
       def persist!
         file_manager.content = to_content
       end
 
-      def remove(content)
-        @list.safe_delete(content)
+      def main_group
+        @main_group ||= Group.parse(list)
       end
 
-      def insert_after(previous_line, line)
-        return if @list.include?(line)
-
-        previous_index = @list.index(previous_line)
-        index = previous_index ? previous_index + 1 : 0
-
-        line.parent_file = self
-        @list.insert(index, line)
+      def each(&block)
+        main_group.each(&block)
       end
 
       def to_content
-        @list.map(&:to_content)
+        main_group.to_content
       end
 
       private
 
-      def parse_file
-        @list = @file_manager.content
-
-        transform_line_procs.each do |transform_line_proc|
-          @list = @list.flat_map { |line| transform_line_proc.call(line) }.compact
+      def list
+        @list ||= @file_manager.content.yield_self do |list|
+          transform_line_procs.each do |transform_line_proc|
+            list = list.flat_map { |line| transform_line_proc.call(line) }.compact
+          end
+          list
         end
-
-        @list
       end
 
       def build_line(line)
         Codeowners::Checker::Group::Line.build(line)
-      end
-
-      def assign_line_parent(line)
-        line.parent_file = self
-        line
       end
     end
   end

@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative 'linked_line'
+require_relative 'line'
 
 module Codeowners
   class Checker
     class Group
       # Hold lines which are not defined in other line classes.
-      class UnrecognizedLine < LinkedLine
+      class UnrecognizedLine < Line
       end
     end
   end

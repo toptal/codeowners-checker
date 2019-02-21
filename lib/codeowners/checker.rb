@@ -5,7 +5,7 @@ require 'logger'
 
 require_relative 'checker/code_owners'
 require_relative 'checker/file_as_array'
-require_relative 'checker/linked_group'
+require_relative 'checker/group'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.
@@ -49,7 +49,7 @@ module Codeowners
 
     def patterns_by_owner
       @patterns_by_owner ||=
-        codeowners.list.each_with_object(hash_of_arrays) do |line, patterns_by_owner|
+        codeowners.each_with_object(hash_of_arrays) do |line, patterns_by_owner|
           next unless line.pattern?
 
           line.owners.each { |owner| patterns_by_owner[owner] << line.pattern }
@@ -69,7 +69,7 @@ module Codeowners
     end
 
     def useless_pattern
-      codeowners.list.select do |line|
+      codeowners.select do |line|
         next unless line.pattern?
 
         unless pattern_has_files(line.pattern)
@@ -88,7 +88,7 @@ module Codeowners
     end
 
     def defined_owner?(file)
-      codeowners.list.find do |line|
+      codeowners.find do |line|
         next unless line.pattern?
 
         return true if file == line.pattern
@@ -106,7 +106,7 @@ module Codeowners
     end
 
     def main_group
-      @main_group ||= LinkedGroup.parse(codeowners.list, codeowners)
+      codeowners.main_group
     end
 
     def codeowners_filename
