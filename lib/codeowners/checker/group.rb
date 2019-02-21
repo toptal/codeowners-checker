@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative 'line_grouper'
-require_relative 'parentable'
 require_relative 'group/line'
 require_relative 'array'
 
@@ -9,6 +8,8 @@ module Codeowners
   class Checker
     # Manage the groups content and handle operations on the groups.
     class Group
+      include Enumerable
+
       attr_accessor :parent
 
       def self.parse(lines)
@@ -17,6 +18,16 @@ module Codeowners
 
       def initialize
         @list = []
+      end
+
+      def each(&block)
+        @list.each do |object|
+          if object.is_a?(self.class)
+            object.each(&block)
+          else
+            block.call(object)
+          end
+        end
       end
 
       def parse(lines)
@@ -47,7 +58,7 @@ module Codeowners
         owners.first
       end
 
-      # Owners are ordered by the amount of occurences
+      # Owners are ordered by the amount of occurrences
       def owners
         all_owners.group_by(&:itself).sort_by do |_owner, occurences|
           -occurences.count
@@ -70,19 +81,20 @@ module Codeowners
       end
 
       def create_subgroup
-        group = new_group
+        group = self.class.new
         @list << group
         group
       end
 
       def add(line)
-        previous_line = @list.last
-        insert_after(previous_line, line)
+        line.parent = self
+        @list << line
       end
 
       def insert(line)
-        previous_line = find_previous_line(line)
-        insert_after(previous_line, line)
+        line.parent = self
+        index = insert_at_index(line)
+        @list.insert(index, line)
       end
 
       def remove(line)
@@ -106,44 +118,29 @@ module Codeowners
 
       private
 
-      def new_group
-        self.class.new
-      end
-
       def all_owners
-        @list.flat_map do |item|
-          item.owners if item.respond_to?(:owners)
+        flat_map do |item|
+          item.owners if item.pattern?
         end.compact
       end
 
-      def find_previous_line(line)
+      def insert_at_index(line)
         patterns = @list.grep(Pattern)
         new_patterns_sorted = patterns.dup.push(line).sort
-        new_pattern_index = new_patterns_sorted.index(line)
+        new_pattern_index = new_patterns_sorted.index { |l| l.equal? line }
 
-        if new_pattern_index > 0
-          new_patterns_sorted[new_pattern_index - 1]
+        if new_pattern_index > 0 # rubocop:disable Style/NumericPredicate
+          new_pattern_index + 1
         else
           find_last_line_of_initial_comments
         end
       end
 
       def find_last_line_of_initial_comments
-        @list.inject(nil) do |previous, item|
-          if item.is_a?(Comment)
-            item
-          else
-            return previous
-          end
+        @list.each_with_index do |item, index|
+          return index unless item.is_a?(Comment)
         end
-      end
-
-      def insert_after(previous_line, line)
-        previous_index = @list.index(previous_line)
-        index = previous_index ? previous_index + 1 : 0
-
-        line.parent = self
-        @list.insert(index, line)
+        0
       end
     end
   end

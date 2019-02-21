@@ -77,4 +77,7 @@ module Codeowners
   end
 end
 
-require_relative 'linked_line'
+require_relative 'empty'
+require_relative 'comment'
+require_relative 'pattern'
+require_relative 'unrecognized_line'
