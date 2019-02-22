@@ -1,4 +1,4 @@
-# Codeowners::Checker
+# Codeowners Checker
 
 This gem checks if the github codeowners are specified to all files changes
 between two git revisions.
@@ -31,6 +31,19 @@ Or via code:
 ```ruby
 Codeowners::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
 ```
+When a new pattern is detected, it will suggest possible groups to which particular file belongs based on the main owner of the patterns in each group. After selecting a group the pattern is added to the group in alphabetical order. If no group is selected or found the pattern is added at the end of the CODEOWNERS file.
+
+<p align="center">
+  <img src="demos/missing_reference.svg">
+</p>
+
+When a pattern which doesn't match any files in the folder structure is detected, it will ask to fix the pattern and suggest a possible alternative. The user can choose to accept the suggestion, ignore, edit or delete the pattern.
+
+<p align="center">
+  <img src="demos/useless_pattern.svg">
+</p>
+
+After modifying the CODEOWNERS file the changes can be immediately committed.
 
 ### Filtering Changes in Pull Requests
 
