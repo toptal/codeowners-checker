@@ -89,7 +89,7 @@ module Codeowners
       codeowners.find do |line|
         next unless line.pattern?
 
-        return true if file == line.pattern
+        return true if line.match_file?(file)
       end
 
       @when_new_file&.call(file) if @when_new_file

@@ -102,21 +102,46 @@ RSpec.describe Codeowners::Checker do
   end
 
   context 'when introducing a new file in the git tree' do
-    before do
-      on_project_folder do
-        filename = 'lib/new_file.rb'
-        File.open(filename, 'w+') do |file|
-          file.puts '# add some ruby code here'
+    context 'when the file is not in the CODEOWNERS' do
+      before do
+        on_project_folder do
+          filename = 'lib/new_file.rb'
+          File.open(filename, 'w+') do |file|
+            file.puts '# add some ruby code here'
+          end
+          git.add filename
+          git.commit('New ruby file on lib')
         end
-        git.add filename
-        git.commit('New ruby file on lib')
+      end
+
+      let(:from) { 'HEAD~1' }
+
+      it 'fails if the file is not referenced in .github/CODEOWNERS' do
+        expect(subject).to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [])
       end
     end
 
-    let(:from) { 'HEAD~1' }
+    context 'when the files are not in the CODEOWNERS but generic patterns are' do
+      before do
+        on_project_folder do
+          filename = 'lib/billing/new_file.rb'
+          filename2 = 'app/file.js'
+          Dir.mkdir('app')
+          File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
+          File.open(filename2, 'w+') { |file| file.puts '# add some ruby code here' }
+          File.open('.github/CODEOWNERS', 'a+') { |f| f.puts '*.js @owner3' }
 
-    it 'fails if the file is not referenced in .github/CODEOWNERS' do
-      expect(subject).to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [])
+          git.add filename
+          git.add filename2
+          git.commit('New files')
+        end
+      end
+
+      let(:from) { 'HEAD~1' }
+
+      it 'does not list the files as missing reference' do
+        expect(subject).to eq(missing_ref: [], useless_pattern: [])
+      end
     end
   end
 

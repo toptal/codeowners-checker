@@ -27,8 +27,18 @@ module Codeowners
           @pattern, *@owners = line.split(/\s+/)
         end
 
+        def match_file?(file)
+          regex.match(file)
+        end
+
         def to_s
           [@pattern, @owners].join(' ')
+        end
+
+        private
+
+        def regex
+          Regexp.new(pattern.gsub(%r{/\*\*}, '(/[^/]+)+').gsub(/\*/, '[^/]+'))
         end
       end
     end
