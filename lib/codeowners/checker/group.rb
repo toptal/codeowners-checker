@@ -1,14 +1,16 @@
 # frozen_string_literal: true
 
 require_relative 'line_grouper'
-require_relative 'parentable'
 require_relative 'group/line'
+require_relative 'array'
 
 module Codeowners
   class Checker
     # Manage the groups content and handle operations on the groups.
     class Group
-      include Parentable
+      include Enumerable
+
+      attr_accessor :parent
 
       def self.parse(lines)
         new.parse(lines)
@@ -16,6 +18,16 @@ module Codeowners
 
       def initialize
         @list = []
+      end
+
+      def each(&block)
+        @list.each do |object|
+          if object.is_a?(self.class)
+            object.each(&block)
+          else
+            block.call(object)
+          end
+        end
       end
 
       def parse(lines)
@@ -46,10 +58,10 @@ module Codeowners
         owners.first
       end
 
-      # Owners are ordered by the amount of occurences
+      # Owners are ordered by the amount of occurrences
       def owners
-        all_owners.group_by(&:itself).sort_by do |_owner, occurences|
-          -occurences.count
+        all_owners.group_by(&:itself).sort_by do |_owner, occurrences|
+          -occurrences.count
         end.map(&:first)
       end
 
@@ -68,30 +80,36 @@ module Codeowners
         @list.first.to_s
       end
 
-      def add(content)
-        content.parents << self
-        @list << content
+      def create_subgroup
+        group = self.class.new
+        @list << group
+        group
       end
 
-      def insert(pattern)
-        index = new_line_index(pattern)
-
-        pattern.parents << self
-        @list.insert(index, pattern)
+      def add(line)
+        line.parent = self
+        @list << line
       end
 
-      def remove(content)
-        @list.delete(content)
+      def insert(line)
+        line.parent = self
+        index = insert_at_index(line)
+        @list.insert(index, line)
+      end
+
+      def remove(line)
+        @list.safe_delete(line)
         remove! unless @list.any?(Pattern)
       end
 
       def remove!
         @list.each(&:remove!)
-        super
+        parent&.remove(self)
+        self.parent = nil
       end
 
       def ==(other)
-        other.is_a?(Group) && other.list == list
+        other.kind_of?(Group) && other.list == list
       end
 
       protected
@@ -101,22 +119,28 @@ module Codeowners
       private
 
       def all_owners
-        @list.flat_map do |item|
-          item.owners if item.respond_to?(:owners)
+        flat_map do |item|
+          item.owners if item.pattern?
         end.compact
       end
 
-      def new_line_index(pattern)
+      def insert_at_index(line)
         patterns = @list.grep(Pattern)
-        new_patterns_sorted = patterns.dup.push(pattern).sort
-        new_pattern_index = new_patterns_sorted.index(pattern)
+        new_patterns_sorted = patterns.dup.push(line).sort
+        new_pattern_index = new_patterns_sorted.index { |l| l.equal? line }
 
-        if new_pattern_index > 0
-          previous_line = new_patterns_sorted[new_pattern_index - 1]
-          @list.index(previous_line) + 1
+        if new_pattern_index > 0 # rubocop:disable Style/NumericPredicate
+          new_pattern_index + 1
         else
-          @list.index { |item| !item.is_a?(Comment) } || 0
+          find_last_line_of_initial_comments
         end
+      end
+
+      def find_last_line_of_initial_comments
+        @list.each_with_index do |item, index|
+          return index unless item.is_a?(Comment)
+        end
+        0
       end
     end
   end

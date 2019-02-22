@@ -1,20 +1,22 @@
 # frozen_string_literal: true
 
-require_relative '../parentable'
-
 module Codeowners
   class Checker
     class Group
       # It sorts lines from CODEOWNERS file to different line types and holds
       # shared methods for all lines.
       class Line
-        include Parentable
+        attr_accessor :parent
 
-        def self.build(line)
-          [Empty, GroupBeginComment, GroupEndComment, Comment, Pattern].each do |klass|
+        def self.build(line, transform_line_procs: nil)
+          subclasses.each do |klass|
             return klass.new(line) if klass.match?(line)
           end
           UnrecognizedLine.new(line)
+        end
+
+        def self.subclasses
+          [Empty, GroupBeginComment, GroupEndComment, Comment, Pattern]
         end
 
         def initialize(line)
@@ -35,6 +37,11 @@ module Codeowners
 
         def to_tree(indentation)
           indentation + to_s
+        end
+
+        def remove!
+          parent&.remove(self)
+          parent = nil
         end
 
         def ==(other)

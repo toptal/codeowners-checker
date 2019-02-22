@@ -10,6 +10,7 @@ RSpec.describe Codeowners::Checker::Group do
   let(:no_name) { described_class.new }
   let(:group2) { described_class.new }
   let(:group3) { described_class.new }
+  let(:group31) { described_class.new }
   let(:pattern) { Codeowners::Checker::Group::Line.build('pattern4 @owner') }
   let(:pattern1) { Codeowners::Checker::Group::Line.build('pattern @owner3') }
 
@@ -82,7 +83,6 @@ RSpec.describe Codeowners::Checker::Group do
     add_content(group3, '# BEGIN group 3')
     add_content(group3, '#comment3')
     add_content(group3, '')
-    group31 = described_class.new
     add_content(group31, '##group3.1')
     add_content(group31, 'pattern7 @owner3')
     add_content(group31, '')
@@ -147,7 +147,8 @@ RSpec.describe Codeowners::Checker::Group do
   describe '#owner' do
     it 'returns the first owner' do
       expect(group1.owner).to eq('@owner')
-      expect(group3.owner).to eq('@owner3')
+      expect(group3.owner).to eq('@owner')
+      expect(group31.owner).to eq('@owner3')
     end
   end
 
@@ -162,7 +163,7 @@ RSpec.describe Codeowners::Checker::Group do
     context 'when subgroups owned by desired owner exist' do
       it 'returns array of subgroups owned by owner' do
         subgroups = subject.subgroups_owned_by('@owner')
-        expect(subgroups.map(&:title)).to eq(['#group1', '#group2'])
+        expect(subgroups.map(&:title)).to eq(['#group1', '#group2', '# BEGIN group 3'])
       end
     end
 
@@ -194,21 +195,33 @@ RSpec.describe Codeowners::Checker::Group do
 
   describe '#insert' do
     context 'when inserting in a group without a subgroup' do
-      it 'inserts new pattern to the group in alphabetical order' do
-        group1.insert(pattern)
-        expect(group1.to_content).to eq(
-          ['#group1', 'pattern1 @owner', 'pattern2 @owner',
-           'pattern4 @owner', 'pattern5 @owner', '']
-        )
+      context 'in the middle of the group' do
+        it 'inserts new pattern to the group in alphabetical order' do
+          group1.insert(pattern)
+          expect(group1.to_content).to eq(
+            ['#group1', 'pattern1 @owner', 'pattern2 @owner',
+             'pattern4 @owner', 'pattern5 @owner', '']
+          )
+        end
       end
-    end
 
-    context 'when inserting in the first row of a group' do
-      it 'inserts the pattern in the first row' do
-        no_name.insert(pattern1)
-        expect(no_name.to_content).to eq(
-          ['pattern @owner3', 'pattern10 @owner2', 'pattern11 @owner2', '']
-        )
+      context 'when inserting in the first row after the initial comments' do
+        it 'inserts new pattern to the first row' do
+          group1.insert(pattern1)
+          expect(group1.to_content).to eq(
+            ['#group1', 'pattern @owner3', 'pattern1 @owner', 'pattern2 @owner',
+             'pattern5 @owner', '']
+          )
+        end
+      end
+
+      context 'when inserting in the first row of a group with no comment' do
+        it 'inserts the pattern in the first row' do
+          no_name.insert(pattern1)
+          expect(no_name.to_content).to eq(
+            ['pattern @owner3', 'pattern10 @owner2', 'pattern11 @owner2', '']
+          )
+        end
       end
     end
 
@@ -286,7 +299,7 @@ RSpec.describe Codeowners::Checker::Group do
       it 'removes the pattern, the title and the group from the parent group' do
         group41.remove(pattern1)
         expect(group41.to_content).to eq([])
-        expect(group41.parents).to eq(Set[])
+        expect(group41.parent).to eq(nil)
         expect(group4.to_content).to eq(['#Group4', 'pattern4 @owner', ''])
       end
     end

@@ -20,13 +20,15 @@ Gem::Specification.new do |spec|
   spec.executables   = ['codeowners-checker']
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'fuzzy_match'
-  spec.add_dependency 'git'
-  spec.add_dependency 'thor'
+  spec.add_dependency 'fuzzy_match', '~> 2.1'
+  spec.add_dependency 'git', '~> 1.5'
+  spec.add_dependency 'thor', '~> 0.20.3'
   spec.add_development_dependency 'bundler', '~> 1.16'
   spec.add_development_dependency 'simplecov'
   spec.add_development_dependency 'rake', '~> 10.0'
   spec.add_development_dependency 'rspec', '~> 3.0'
-  spec.add_development_dependency 'rubocop'
-  spec.add_development_dependency 'rubocop-rspec'
+  spec.add_development_dependency 'rubocop', '~> 0.61.1'
+  spec.add_development_dependency 'rubocop-rspec', '~> 1.30'
+  spec.add_development_dependency 'pry', '~> 0.12.2'
+  spec.add_development_dependency 'rb-readline', '~> 0.5.5'
 end

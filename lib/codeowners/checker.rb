@@ -5,17 +5,13 @@ require 'logger'
 
 require_relative 'checker/code_owners'
 require_relative 'checker/file_as_array'
+require_relative 'checker/group'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.
   # It compares what's being changed in the PR and check if the current files and folders
   # are also being declared in the CODEOWNERS file.
   class Checker
-    # Check some repo from a reference to another
-    def self.check!(repo, from, to)
-      new(repo, from, to).check!
-    end
-
     attr_accessor :when_useless_pattern, :when_new_file
 
     # Get repo metadata and compare with the owners
@@ -24,6 +20,10 @@ module Codeowners
       @repo_dir = repo
       @from = from || 'HEAD'
       @to = to
+    end
+
+    def transformers
+      @transformers ||= []
     end
 
     def changes_to_analyze
@@ -47,7 +47,7 @@ module Codeowners
 
     def patterns_by_owner
       @patterns_by_owner ||=
-        codeowners.list.each_with_object(hash_of_arrays) do |line, patterns_by_owner|
+        codeowners.each_with_object(hash_of_arrays) do |line, patterns_by_owner|
           next unless line.pattern?
 
           line.owners.each { |owner| patterns_by_owner[owner] << line.pattern }
@@ -67,7 +67,7 @@ module Codeowners
     end
 
     def useless_pattern
-      codeowners.list.select do |line|
+      codeowners.select do |line|
         next unless line.pattern?
 
         unless pattern_has_files(line.pattern)
@@ -86,7 +86,7 @@ module Codeowners
     end
 
     def defined_owner?(file)
-      codeowners.list.find do |line|
+      codeowners.find do |line|
         next unless line.pattern?
 
         return true if file == line.pattern
@@ -97,15 +97,22 @@ module Codeowners
     end
 
     def codeowners
-      @codeowners ||= CodeOwners.new(FileAsArray.new(codeowners_file))
+      @codeowners ||= CodeOwners.new(
+        FileAsArray.new(codeowners_filename),
+        transformers: transformers
+      )
     end
 
-    def codeowners_file
+    def main_group
+      codeowners.main_group
+    end
+
+    def codeowners_filename
       File.join(@repo_dir, '.github', 'CODEOWNERS')
     end
 
     def commit_changes!
-      @git.add(codeowners_file)
+      @git.add(codeowners_filename)
       @git.commit('Fix pattern :robot:')
     end
   end

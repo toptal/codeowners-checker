@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'comment'
+
 module Codeowners
   class Checker
     class Group

@@ -4,7 +4,7 @@ require 'fileutils'
 require 'codeowners/checker'
 
 RSpec.describe Codeowners::Checker do
-  subject { described_class.check! folder_name, from, to }
+  subject { described_class.new(folder_name, from, to).check! }
 
   let(:folder_name) { 'project' }
   let(:from) { 'HEAD' }

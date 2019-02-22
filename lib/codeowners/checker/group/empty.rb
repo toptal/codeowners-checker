@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative 'line'
+
 module Codeowners
   class Checker
     class Group

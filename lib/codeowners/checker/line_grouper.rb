@@ -2,9 +2,8 @@
 
 module Codeowners
   class Checker
+    # Create groups and subgroups structure for the lines in the CODEOWNERS file.
     class LineGrouper
-      # Create groups and subgroups structure for the lines in the CODEOWNERS file.
-
       def self.call(group, lines)
         new(group, lines).call
       end
@@ -83,8 +82,7 @@ module Codeowners
       end
 
       def new_group
-        group = Group.new
-        current_group.add(group)
+        group = current_group.create_subgroup
         group_buffer << group
       end
 
