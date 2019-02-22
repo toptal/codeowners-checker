@@ -50,6 +50,7 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
     }.each do |content, tests|
       context "when the line is #{content.inspect}" do
         let(:line) { content }
+
         tests.each do |file, result|
           if result
             it { is_expected.to be_match_file(file) }

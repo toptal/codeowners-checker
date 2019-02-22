@@ -261,7 +261,7 @@ RSpec.describe Codeowners::Checker do
         expect(subject.codeowners).to be_a(Codeowners::Checker::CodeOwners)
         expect(subject.codeowners.to_content).to eq(
           ['# comment ignored', '.rubocop.yml @owner', 'Gemfile @owner1', 'lib/billing/* @owner2',
-          'lib/shared/* @owner2 @owner1']
+           'lib/shared/* @owner2 @owner1']
         )
       end
     end
@@ -272,7 +272,7 @@ RSpec.describe Codeowners::Checker do
       it 'returns the content of the codeowners file' do
         expect(subject.codeowners.to_content).to eq(
           ['# comment ignored', '.rubocop.yml @owner', 'Gemfile @owner1', 'lib/billing/* @owner2',
-          'lib/shared/* @owner2 @owner1']
+           'lib/shared/* @owner2 @owner1']
         )
       end
     end

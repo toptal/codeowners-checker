@@ -28,8 +28,9 @@ RSpec.describe Codeowners::Checker::Group::Line do
 
   describe '.subclasses' do
     let(:line_subclasses) do
-      ObjectSpace.each_object(::Class).select { |klass| klass < described_class } -
-        [Codeowners::Checker::Group::UnrecognizedLine]
+      ObjectSpace.each_object(::Class).select { |klass| klass < described_class } - [
+        Codeowners::Checker::Group::UnrecognizedLine
+      ]
     end
 
     it 'includes all subclasses except of unrecognized line' do
