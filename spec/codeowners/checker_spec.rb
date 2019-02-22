@@ -227,4 +227,49 @@ RSpec.describe Codeowners::Checker do
       end
     end
   end
+
+  describe '#codeowners' do
+    subject { described_class.new(folder_name, from, to) }
+
+    context 'when the file is in the .github folder' do
+      it 'returns the content of the codeowners file' do
+        expect(subject.codeowners).to be_a(Codeowners::Checker::CodeOwners)
+        expect(subject.codeowners.to_content).to eq(
+          ['# comment ignored', '.rubocop.yml @owner', 'Gemfile @owner1', 'lib/billing/* @owner2',
+          'lib/shared/* @owner2 @owner1']
+        )
+      end
+    end
+
+    context 'when the file is in the root folder' do
+      before { FileUtils.mv('project/.github/CODEOWNERS', 'project/CODEOWNERS') }
+
+      it 'returns the content of the codeowners file' do
+        expect(subject.codeowners.to_content).to eq(
+          ['# comment ignored', '.rubocop.yml @owner', 'Gemfile @owner1', 'lib/billing/* @owner2',
+          'lib/shared/* @owner2 @owner1']
+        )
+      end
+    end
+
+    context 'when the file does not exist' do
+      before { FileUtils.rm_f('project/.github/CODEOWNERS') }
+
+      it 'uses a root folder for the file and returns an empty array for the content' do
+        expect(subject.codeowners.to_content).to eq([])
+      end
+    end
+  end
+
+  describe '#main_group' do
+    subject { described_class.new(folder_name, from, to) }
+
+    it 'returns an array containing the main group' do
+      expect(subject.main_group.to_content).to eq(
+        ['# comment ignored', '.rubocop.yml @owner', 'Gemfile @owner1', 'lib/billing/* @owner2',
+         'lib/shared/* @owner2 @owner1']
+      )
+      expect(subject.main_group).to be_a(Codeowners::Checker::Group)
+    end
+  end
 end

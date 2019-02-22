@@ -107,13 +107,17 @@ module Codeowners
       codeowners.main_group
     end
 
-    def codeowners_filename
-      File.join(@repo_dir, '.github', 'CODEOWNERS')
-    end
-
     def commit_changes!
       @git.add(codeowners_filename)
       @git.commit('Fix pattern :robot:')
+    end
+
+    private
+
+    def codeowners_filename
+      directories = ['', '.github', 'docs', '.gitlab']
+      paths = directories.map { |dir| File.join(@repo_dir, dir, 'CODEOWNERS') }
+      Dir.glob(paths).first || paths.first
     end
   end
 end
