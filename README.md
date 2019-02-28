@@ -1,6 +1,6 @@
-# Codeowners::Checker
+# Codeowners Checker
 
-This gem checks if the github codeowners are specified to all files changes
+This gem checks if the GitHub codeowners are specified to all files changes
 between two git revisions.
 
 ## Installation
@@ -23,13 +23,116 @@ this check.
 
     $  codeowners-checker check
 
-It will suggest files that need to be added or removed from the CODEOWNERS file and provide
-options to make the necessary changes.
-
 Or via code:
 
 ```ruby
 Codeowners::Checker.check! 'repo-dir', 'HEAD', 'branch-name'
+```
+
+
+#### Example
+
+Example CODEOWNERS file:
+
+```
+# Backend
+app/jobs/* @company/backend-devs
+app/models/* @company/backend-devs
+
+# Frontend
+app/assets/* @company/frontend-devs
+app/views/* @company/frontend-devs
+
+# Shared
+Gemfile @company
+```
+
+The content of the CODEOWNERS file is parsed into groups where each group is a collection of patterns
+separated by an empty line and comments describing the group. If no comment is present after
+an empty line, a new group is created only in the case when the owner differs from the owner
+of the previous group. It is also possible to define a group by comments `# BEGIN` and `# END`.
+`# Group` can contain subgroups distinguished by the number of hashes: `## Subgroup`.
+
+When a new file is added to the folder structure, the program detects the file and suggests possible
+groups to which particular file belongs based on the main owner of the patterns in each group.
+After selecting a group the pattern is added to the group in alphabetical order. If no group is
+selected or found the pattern can be added at the end of the CODEOWNERS file.
+
+After modifying the CODEOWNERS file the changes can be immediately committed.
+
+![Missing reference example](demos/missing_reference.svg)
+
+Desired changes were made to the CODEOWNERS file:
+```
+# Backend
+app/controllers/application_controller.rb @company/backend-devs
+app/jobs/* @company/backend-devs
+app/models/* @company/backend-devs
+
+# Frontend
+app/assets/* @company/frontend-devs
+app/views/* @company/frontend-devs
+
+# Shared
+Gemfile @company
+
+lib/invoices.rb @company/billing-team
+```
+
+Now some new patterns containing mistakes have been added by the user to the group `# Shared` and `# Billing`
+and invalid pattern to a new group which is defined by `# BEGIN Security` and `# END Security` comments.
+
+CODEOWNERS file after performing the changes described above:
+```
+# Backend
+app/controllers/application_controller.rb @company/backend-devs
+app/jobs/* @company/backend-devs
+app/models/* @company/backend-devs
+
+# Frontend
+app/assets/* @company/frontend-devs
+app/views/* @company/frontend-devs
+
+# Billing
+app/models/billng.rb @company/billing-team
+lib/invoices.rb @company/billing-team
+
+# BEGIN Security
+lib/security/* @company/security-team
+# END Security
+
+# Shared
+.rubo.yml @company
+Gemfile @company
+
+```
+
+When running it again it will detect the invalid patterns. It will ask to fix the patterns
+and suggest a possible alternative. The user can choose to accept the suggestion, ignore, edit
+or delete the pattern. If the user decides to delete the last pattern in a group,
+the comments defining the group are deleted as well as the pattern.
+
+![Useless pattern example](demos/useless_pattern.svg)
+
+Invalid patterns were fixed and the group `Security` was removed when deleting the only pattern
+in the group:
+```
+# Backend
+app/controllers/application_controller.rb @company/backend-devs
+app/jobs/* @company/backend-devs
+app/models/* @company/backend-devs
+
+# Frontend
+app/assets/* @company/frontend-devs
+app/views/* @company/frontend-devs
+
+# Billing
+app/models/billing.rb @company/billing-team
+lib/invoices.rb @company/billing-team
+
+# Shared
+.rubocop.yml @company
+Gemfile @company
 ```
 
 ### Filtering Changes in Pull Requests
