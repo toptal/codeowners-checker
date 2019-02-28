@@ -7,7 +7,7 @@ require 'codeowners/checker/version'
 Gem::Specification.new do |spec|
   spec.name          = 'codeowners-checker'
   spec.version       = Codeowners::Checker::VERSION
-  spec.authors       = ['Jônatas Davi Paganini', 'Eva Kadlecova', 'Michal Papis']
+  spec.authors       = ['Jônatas Davi Paganini', 'Eva Kadlecová', 'Michal Papis']
   spec.email         = ['bootcamp_team@toptal.com']
 
   spec.summary       = 'Check consistency of Github CODEOWNERS and git changes.'
@@ -24,11 +24,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'git', '~> 1.5'
   spec.add_dependency 'thor', '~> 0.20.3'
   spec.add_development_dependency 'bundler', '~> 1.16'
-  spec.add_development_dependency 'simplecov'
+  spec.add_development_dependency 'pry', '~> 0.12.2'
   spec.add_development_dependency 'rake', '~> 10.0'
+  spec.add_development_dependency 'rb-readline', '~> 0.5.5'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_development_dependency 'rubocop', '~> 0.61.1'
   spec.add_development_dependency 'rubocop-rspec', '~> 1.30'
-  spec.add_development_dependency 'pry', '~> 0.12.2'
-  spec.add_development_dependency 'rb-readline', '~> 0.5.5'
+  spec.add_development_dependency 'simplecov', '~> 0.16.1'
 end

@@ -22,7 +22,7 @@ module Codeowners
 
       def each(&block)
         @list.each do |object|
-          if object.is_a?(self.class)
+          if object.is_a?(Group)
             object.each(&block)
           else
             block.call(object)
@@ -82,6 +82,7 @@ module Codeowners
 
       def create_subgroup
         group = self.class.new
+        group.parent = self
         @list << group
         group
       end
@@ -99,11 +100,11 @@ module Codeowners
 
       def remove(line)
         @list.safe_delete(line)
-        remove! unless @list.any?(Pattern)
+        remove! unless any?(Pattern)
       end
 
       def remove!
-        @list.each(&:remove!)
+        @list.clear
         parent&.remove(self)
         self.parent = nil
       end

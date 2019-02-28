@@ -47,7 +47,7 @@ module Codeowners
       end
 
       def suggest_add_to_codeowners(file)
-        return unless yes?("File added: #{file.inspect}. Add owner to CODEOWNERS?")
+        return unless yes?("File added: #{file.inspect}. Add owner to the CODEOWNERS file?")
 
         owner = ask('File owner(s): ')
         new_line = create_new_pattern(file, owner)
@@ -73,7 +73,7 @@ module Codeowners
           return if insert_pattern_into_subgroup(pattern, subgroups) == true
         end
 
-        @checker.main_group.add(pattern) if yes?('Add to the end of the codeowners file?')
+        @checker.main_group.add(pattern) if yes?('Add to the end of the CODEOWNERS file?')
       end
 
       def insert_pattern_into_subgroup(pattern, subgroups)
@@ -120,7 +120,7 @@ module Codeowners
 
       def make_suggestion(suggestion)
         ask(<<~QUESTION, limited_to: %w[y i e d])
-          Replace with: #{suggestion}?
+          Replace with: #{suggestion.inspect}?
           (y) yes
           (i) ignore
           (e) edit the pattern
