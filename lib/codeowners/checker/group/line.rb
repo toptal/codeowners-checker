@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require 'pathname'
 module Codeowners
   class Checker
     class Group
