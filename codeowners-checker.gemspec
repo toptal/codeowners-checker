@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.name          = 'codeowners-checker'
   spec.version       = Codeowners::Checker::VERSION
   spec.authors       = ['Jônatas Davi Paganini', 'Eva Kadlecová', 'Michal Papis']
-  spec.email         = ['bootcamp_team@toptal.com']
+  spec.email         = ['open-source@toptal.com']
 
   spec.summary       = 'Check consistency of Github CODEOWNERS and git changes.'
   spec.license       = 'MIT'
