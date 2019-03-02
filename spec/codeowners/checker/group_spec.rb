@@ -173,6 +173,15 @@ RSpec.describe Codeowners::Checker::Group do
         expect(subgroups.map(&:title)).to eq([])
       end
     end
+
+    context 'when a pattern has been added to the end of the main_group' do
+      before { subject.add(pattern) }
+
+      it 'returns array of subgroups owned by owner' do
+        subgroups = subject.subgroups_owned_by('@owner')
+        expect(subgroups.map(&:title)).to eq(['#group1', '#group2', '# BEGIN group 3'])
+      end
+    end
   end
 
   describe '#title' do
