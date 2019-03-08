@@ -38,6 +38,10 @@ module Codeowners
         @list.flat_map(&:to_content)
       end
 
+      def to_file
+        @list.flat_map(&:to_file)
+      end
+
       # Returns an array of strings representing the structure of the group.
       # It indent internal subgroups for readability and debugging purposes.
       def to_tree(indentation = '')
@@ -126,12 +130,13 @@ module Codeowners
       end
 
       def insert_at_index(line)
-        patterns = @list.grep(Pattern)
-        new_patterns_sorted = patterns.dup.push(line).sort
-        new_pattern_index = new_patterns_sorted.index { |l| l.equal? line }
+        new_patterns_sorted = @list.grep(Pattern).dup.push(line).sort
+        previous_line_index = new_patterns_sorted.index { |l| l.equal? line } - 1
+        previous_line = new_patterns_sorted[previous_line_index]
+        line.whitespace = previous_line.to_file.length - line.to_file.length + 1
 
-        if new_pattern_index > 0 # rubocop:disable Style/NumericPredicate
-          new_pattern_index + 1
+        if previous_line_index >= 0
+          @list.index { |l| l.equal? previous_line } + 1
         else
           find_last_line_of_initial_comments
         end

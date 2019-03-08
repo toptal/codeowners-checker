@@ -22,23 +22,40 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
         'directory/file.rb' => true,
         'directory/subdirectory/file.rb' => false
       },
-      '* @owner' => {
-        'file.rb' => true,
-        'directory/file.rb' => true,
-        'directory/subdirectory/file.rb' => true
+      '/dir/dir1/*file* @owner' => {
+        'dir/file.rb' => false,
+        'dir/dir1/file.rb' => true,
+        'dir/dir1/other_file.rb' => true,
+        'dir/dir1/dir2/file.rb' => false
       },
-      'dir/dir1/* @owner' => {
+      'dir/*/file.rb @owner' => {
         'file.rb' => false,
         'dir/file.rb' => false,
         'dir/dir1/file.rb' => true,
         'dir/dir1/dir2/file.rb' => false
       },
-      'dir/dir1/file.rb @owner' => {
+      'dir/** @owner' => {
         'file.rb' => false,
+        'dir/file.rb' => true,
+        'dir/dir1/file.rb' => true,
+        'dir/dir1/dir2/file.rb' => true
+      },
+      'dir/**/file.rb @owner' => {
         'dir/file.rb' => false,
         'dir/dir1/file.rb' => true,
-        'dir/dir1/file1.rb' => false,
-        'dir/dir1/dir2/file.rb' => false
+        'dir/dir1/dir2/file.rb' => true
+      },
+      '?ile[a-z1-9].rb @owner' => {
+        'file.rb' => false,
+        'file1.rb' => true,
+        'file-a.rb' => false,
+        'other_file1.rb' => false
+      },
+      '**/dir/file.rb @owner' => {
+        'file.rb' => false,
+        'dir/file.rb' => false,
+        'dir1/dir/file.rb' => true,
+        'dir1/dir2/dir/file.rb' => true
       },
       '*.js @owner' => {
         'file.rb' => false,
@@ -46,7 +63,13 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
         'dir/dir1/file.rb' => false,
         'dir/dir1/file1.js' => true,
         'dir/dir1/dir2/file.js' => true
+      },
+      '* @owner' => {
+        '.file.rb' => true,
+        'directory/.file.rb' => true,
+        'directory/subdirectory/file.rb' => true
       }
+
     }.each do |content, tests|
       context "when the line is #{content.inspect}" do
         let(:line) { content }

@@ -70,7 +70,7 @@ module Codeowners
 
       def add_pattern(pattern, subgroups)
         unless subgroups.empty?
-          return if insert_pattern_into_subgroup(pattern, subgroups) == true
+          return if insert_pattern_into_subgroup(pattern, subgroups)
         end
 
         @checker.main_group.add(pattern) if yes?('Add to the end of the CODEOWNERS file?')
@@ -110,6 +110,7 @@ module Codeowners
         case make_suggestion(suggestion)
         when 'i' then nil
         when 'y'
+          line.whitespace += line.pattern.length - suggestion.length
           line.pattern = suggestion
         when 'e'
           pattern_change(line)
@@ -148,6 +149,7 @@ module Codeowners
         new_pattern = ask("Replace pattern #{line.pattern.inspect} with: ")
         return if new_pattern.empty?
 
+        line.whitespace += line.pattern.length - new_pattern.length
         line.pattern = new_pattern
       end
 
@@ -176,6 +178,7 @@ module Codeowners
           new_line_string = ask('New line: ')
           line = Codeowners::Checker::Group::Line.build(new_line_string)
         end while line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
+        @codeowners_changed = true
         line
       end
     end
