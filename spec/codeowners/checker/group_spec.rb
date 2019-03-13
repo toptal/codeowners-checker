@@ -163,7 +163,7 @@ RSpec.describe Codeowners::Checker::Group do
     context 'when subgroups owned by desired owner exist' do
       it 'returns array of subgroups owned by owner' do
         subgroups = subject.subgroups_owned_by('@owner')
-        expect(subgroups.map(&:title)).to eq(['#group1', '#group2', '# BEGIN group 3'])
+        expect(subgroups.map(&:title)).to eq(['#group1', '#group2', '# BEGIN group 3', "##group3.2"])
       end
     end
 
@@ -179,7 +179,7 @@ RSpec.describe Codeowners::Checker::Group do
 
       it 'returns array of subgroups owned by owner' do
         subgroups = subject.subgroups_owned_by('@owner')
-        expect(subgroups.map(&:title)).to eq(['#group1', '#group2', '# BEGIN group 3'])
+        expect(subgroups.map(&:title)).to eq(['#group1', '#group2', '# BEGIN group 3', "##group3.2"])
       end
     end
   end
