@@ -133,7 +133,8 @@ module Codeowners
         new_patterns_sorted = @list.grep(Pattern).dup.push(line).sort
         previous_line_index = new_patterns_sorted.index { |l| l.equal? line } - 1
         previous_line = new_patterns_sorted[previous_line_index]
-        line.whitespace = previous_line.to_file.length - line.to_file.length + 1
+        padding = previous_line.pattern.size + previous_line.whitespace - line.pattern.size
+        line.whitespace = [1, padding].max
 
         if previous_line_index >= 0
           @list.index { |l| l.equal? previous_line } + 1
