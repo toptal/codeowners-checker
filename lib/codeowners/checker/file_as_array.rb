@@ -9,12 +9,15 @@ module Codeowners
         @target_dir, = File.split(@file)
       end
 
+      # @return <Array> of lines chomped
       def content
         @content ||= File.readlines(@file).map(&:chomp)
       rescue Errno::ENOENT
         @content = []
       end
 
+      # Save content to the @file
+      # Creates the directory of the file if needed
       def content=(content)
         @content = content
 

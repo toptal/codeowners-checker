@@ -110,7 +110,6 @@ module Codeowners
         case make_suggestion(suggestion)
         when 'i' then nil
         when 'y'
-          line.whitespace += line.pattern.length - suggestion.length
           line.pattern = suggestion
         when 'e'
           pattern_change(line)
@@ -149,7 +148,6 @@ module Codeowners
         new_pattern = ask("Replace pattern #{line.pattern.inspect} with: ")
         return if new_pattern.empty?
 
-        line.whitespace += line.pattern.length - new_pattern.length
         line.pattern = new_pattern
       end
 

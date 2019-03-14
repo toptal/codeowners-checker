@@ -25,7 +25,7 @@ module Codeowners
           if object.is_a?(Group)
             object.each(&block)
           else
-            block.call(object)
+            yield(object)
           end
         end
       end
@@ -114,7 +114,7 @@ module Codeowners
       end
 
       def ==(other)
-        other.kind_of?(Group) && other.list == list
+        other.is_a?(Group) && other.list == list
       end
 
       protected
