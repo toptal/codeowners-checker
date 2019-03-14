@@ -71,7 +71,7 @@ module Codeowners
 
       def subgroups_owned_by(owner)
         @list.flat_map do |item|
-          return [] unless item.is_a?(Group)
+          next unless item.is_a?(Group)
 
           a = []
           a << item if item.owner == owner
