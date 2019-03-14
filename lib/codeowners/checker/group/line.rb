@@ -32,6 +32,10 @@ module Codeowners
           to_s
         end
 
+        def to_file
+          to_s
+        end
+
         def pattern?
           is_a?(Pattern)
         end

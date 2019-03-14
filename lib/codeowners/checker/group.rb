@@ -25,7 +25,7 @@ module Codeowners
           if object.is_a?(Group)
             object.each(&block)
           else
-            block.call(object)
+            yield(object)
           end
         end
       end
@@ -36,6 +36,10 @@ module Codeowners
 
       def to_content
         @list.flat_map(&:to_content)
+      end
+
+      def to_file
+        @list.flat_map(&:to_file)
       end
 
       # Returns an array of strings representing the structure of the group.
@@ -110,7 +114,7 @@ module Codeowners
       end
 
       def ==(other)
-        other.kind_of?(Group) && other.list == list
+        other.is_a?(Group) && other.list == list
       end
 
       protected
@@ -126,12 +130,14 @@ module Codeowners
       end
 
       def insert_at_index(line)
-        patterns = @list.grep(Pattern)
-        new_patterns_sorted = patterns.dup.push(line).sort
-        new_pattern_index = new_patterns_sorted.index { |l| l.equal? line }
+        new_patterns_sorted = @list.grep(Pattern).dup.push(line).sort
+        previous_line_index = new_patterns_sorted.index { |l| l.equal? line } - 1
+        previous_line = new_patterns_sorted[previous_line_index]
+        padding = previous_line.pattern.size + previous_line.whitespace - line.pattern.size
+        line.whitespace = [1, padding].max
 
-        if new_pattern_index > 0 # rubocop:disable Style/NumericPredicate
-          new_pattern_index + 1
+        if previous_line_index >= 0
+          @list.index { |l| l.equal? previous_line } + 1
         else
           find_last_line_of_initial_comments
         end

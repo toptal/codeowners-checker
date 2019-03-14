@@ -70,7 +70,7 @@ module Codeowners
 
       def add_pattern(pattern, subgroups)
         unless subgroups.empty?
-          return if insert_pattern_into_subgroup(pattern, subgroups) == true
+          return if insert_pattern_into_subgroup(pattern, subgroups)
         end
 
         @checker.main_group.add(pattern) if yes?('Add to the end of the CODEOWNERS file?')
@@ -176,6 +176,7 @@ module Codeowners
           new_line_string = ask('New line: ')
           line = Codeowners::Checker::Group::Line.build(new_line_string)
         end while line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
+        @codeowners_changed = true
         line
       end
     end

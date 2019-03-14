@@ -82,7 +82,7 @@ module Codeowners
     end
 
     def pattern_has_files(pattern)
-      @git.ls_files(pattern).any?
+      @git.ls_files(pattern.gsub(%r{^/}, '')).any?
     end
 
     def defined_owner?(file)
