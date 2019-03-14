@@ -35,7 +35,7 @@ module Codeowners
     end
 
     def check!
-      {
+      @results ||= {
         missing_ref: missing_reference,
         useless_pattern: useless_pattern
       }
@@ -107,12 +107,14 @@ module Codeowners
       codeowners.main_group
     end
 
+    def consistent?
+      check!.values.all?(&:empty?)
+    end
+
     def commit_changes!
       @git.add(codeowners_filename)
       @git.commit('Fix pattern :robot:')
     end
-
-    private
 
     def codeowners_filename
       directories = ['', '.github', 'docs', '.gitlab']
