@@ -20,6 +20,7 @@ module Codeowners
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
         @codeowners_changed = false
+        @skip_suggestions = false
         @repo = repo
         setup_checker
         @checker.check!
@@ -63,13 +64,7 @@ module Codeowners
       def suggest_add_to_codeowners(file)
         return unless yes?("File added: #{file.inspect}. Add owner to the CODEOWNERS file?")
 
-        owner = ask('File owner(s): ')
-        new_line = create_new_pattern(file, owner)
-
-        unless new_line.pattern?
-          puts "#{owner.inspect} is not a valid owner name."
-          return
-        end
+        new_line = create_new_pattern(file)
 
         subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
         add_pattern(new_line, subgroups)
@@ -77,9 +72,37 @@ module Codeowners
         @codeowners_changed = true
       end
 
-      def create_new_pattern(file, owner)
-        line = "#{file} #{owner}"
-        Codeowners::Checker::Group::Line.build(line)
+      def create_new_pattern(file)
+        list_owners
+        loop do
+          owner = new_owner
+          line = "#{file} #{owner}"
+          new_line = Codeowners::Checker::Group::Line.build(line)
+
+          return new_line if new_line.pattern?
+
+          puts "#{owner.inspect} is not a valid owner name. Try again." unless new_line.pattern?
+        end
+      end
+
+      def list_owners
+        puts "Owners:"
+        sorted_owners = @checker.main_group.owners.sort
+        sorted_owners.each_with_index { |owner, i| puts "#{i + 1} - #{owner}" }
+        puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
+      end
+
+      def new_owner
+        owner = ask("New owner: ")
+        sorted_owners = @checker.main_group.owners.sort
+
+        if owner.to_i.between?(1, sorted_owners.length)
+          sorted_owners[owner.to_i - 1]
+        elsif owner.empty?
+          @config.default_owner
+        else
+          owner
+        end
       end
 
       def add_pattern(pattern, subgroups)
@@ -105,6 +128,8 @@ module Codeowners
       end
 
       def suggest_fix_for(line)
+        return if @skip_suggestions
+
         search = FuzzyMatch.new(line.suggest_files_for_pattern)
         suggestion = search.find(line.pattern)
 
@@ -129,16 +154,19 @@ module Codeowners
           pattern_change(line)
         when 'd'
           line.remove!
+        when 'q'
+          @skip_suggestions = true
         end
       end
 
       def make_suggestion(suggestion)
-        ask(<<~QUESTION, limited_to: %w[y i e d])
+        ask(<<~QUESTION, limited_to: %w[y i e d q])
           Replace with: #{suggestion.inspect}?
           (y) yes
           (i) ignore
           (e) edit the pattern
           (d) delete the pattern
+          (q) ignore all
         QUESTION
       end
 
@@ -147,14 +175,16 @@ module Codeowners
         when 'e' then pattern_change(line)
         when 'i' then nil
         when 'd' then line.remove!
+        when 'q' then @skip_suggestions = true
         end
       end
 
       def pattern_suggest_fixing
-        ask(<<~QUESTION, limited_to: %w[i e d])
+        ask(<<~QUESTION, limited_to: %w[i e d q])
           (e) edit the pattern
           (d) delete the pattern
           (i) ignore
+          (q) ignore all
         QUESTION
       end
 
