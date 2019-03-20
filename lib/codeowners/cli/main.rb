@@ -15,6 +15,7 @@ module Codeowners
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
       option :interactive, default: true, type: :boolean, aliases: '-i'
+      option :autocommit, default: false, type: :boolean, aliases: '-c'
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
@@ -22,8 +23,21 @@ module Codeowners
         @repo = repo
         setup_checker
         @checker.check!
-        write_codeowners if @codeowners_changed
-        @checker.commit_changes! if options[:interactive] && yes?('Commit changes?')
+        if options[:interactive]
+          if @codeowners_changed
+            write_codeowners
+            @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
+          end
+        else
+          if @checker.consistent?
+            puts '✅ File is consistent'
+            exit 0
+          else
+            puts "File #{@checker.codeowners_filename} is inconsistent:"
+            report_errors!
+            exit -1
+          end
+        end
       end
 
       desc 'filter <by-owner>', 'List owners of changed files'
@@ -94,7 +108,7 @@ module Codeowners
         search = FuzzyMatch.new(line.suggest_files_for_pattern)
         suggestion = search.find(line.pattern)
 
-        puts "Pattern #{line.pattern.inspect} doesn't match."
+        puts "Pattern #{line.pattern.inspect} doesn't match." if options[:interactive]
 
         # TODO: Handle duplicate patterns.
         if suggestion
@@ -178,6 +192,31 @@ module Codeowners
         end while line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
         @codeowners_changed = true
         line
+      end
+
+      def ask(message, *opts)
+        return unless options[:interactive]
+
+        super
+      end
+
+      def yes?(message, *opts)
+        return unless options[:interactive]
+
+        super
+      end
+
+      LABELS = {
+        missing_ref: 'No owner defined',
+        useless_pattern: 'Useeless patterns'
+      }.freeze
+
+      def report_errors!
+        @checker.check!.each do |error_type, inconsistencies|
+          next if inconsistencies.empty?
+
+          puts LABELS[error_type], '-' * 30, inconsistencies, '-' * 30
+        end
       end
     end
   end
