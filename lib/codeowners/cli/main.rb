@@ -20,7 +20,7 @@ module Codeowners
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
         @codeowners_changed = false
-        @skip_suggestions = false
+        @ignore = { suggestions: false, added_files: false }
         @repo = repo
         setup_checker
         @checker.check!
@@ -62,8 +62,25 @@ module Codeowners
       end
 
       def suggest_add_to_codeowners(file)
-        return unless yes?("File added: #{file.inspect}. Add owner to the CODEOWNERS file?")
+        return if @ignore[:added_files]
 
+        case add_to_codeowners_dialog(file)
+        when 'y' then add_to_codeowners(file)
+        when 'i' then return
+        when 'q' then @ignore[:added_files] = true
+        end
+      end
+
+      def add_to_codeowners_dialog(file)
+        ask(<<~QUESTION, limited_to: %w[y i q])
+          File added: #{file.inspect}. Add owner to the CODEOWNERS file?
+          (y) yes
+          (i) ignore
+          (q) ignore all added files
+        QUESTION
+      end
+
+      def add_to_codeowners(file)
         new_line = create_new_pattern(file)
 
         subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
@@ -86,14 +103,14 @@ module Codeowners
       end
 
       def list_owners
-        puts "Owners:"
+        puts 'Owners:'
         sorted_owners = @checker.main_group.owners.sort
         sorted_owners.each_with_index { |owner, i| puts "#{i + 1} - #{owner}" }
         puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
       end
 
       def new_owner
-        owner = ask("New owner: ")
+        owner = ask('New owner: ')
         sorted_owners = @checker.main_group.owners.sort
 
         if owner.to_i.between?(1, sorted_owners.length)
@@ -128,7 +145,7 @@ module Codeowners
       end
 
       def suggest_fix_for(line)
-        return if @skip_suggestions
+        return if @ignore[:suggestions]
 
         search = FuzzyMatch.new(line.suggest_files_for_pattern)
         suggestion = search.find(line.pattern)
@@ -155,7 +172,7 @@ module Codeowners
         when 'd'
           line.remove!
         when 'q'
-          @skip_suggestions = true
+          @ignore[:suggestions] = true
         end
       end
 
@@ -175,7 +192,7 @@ module Codeowners
         when 'e' then pattern_change(line)
         when 'i' then nil
         when 'd' then line.remove!
-        when 'q' then @skip_suggestions = true
+        when 'q' then @ignore[:suggestions] = true
         end
       end
 
