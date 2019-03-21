@@ -19,8 +19,6 @@ module Codeowners
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
-        @codeowners_changed = false
-        @ignore = { suggestions: false, added_files: false }
         @repo = repo
         setup_checker
         @checker.check!
@@ -62,12 +60,12 @@ module Codeowners
       end
 
       def suggest_add_to_codeowners(file)
-        return if @ignore[:added_files]
+        return if @quit
 
         case add_to_codeowners_dialog(file)
         when 'y' then add_to_codeowners(file)
         when 'i' then return
-        when 'q' then @ignore[:added_files] = true
+        when 'q' then @quit = true
         end
       end
 
@@ -76,7 +74,7 @@ module Codeowners
           File added: #{file.inspect}. Add owner to the CODEOWNERS file?
           (y) yes
           (i) ignore
-          (q) ignore all added files
+          (q) quit
         QUESTION
       end
 
@@ -145,7 +143,7 @@ module Codeowners
       end
 
       def suggest_fix_for(line)
-        return if @ignore[:suggestions]
+        return if @quit
 
         search = FuzzyMatch.new(line.suggest_files_for_pattern)
         suggestion = search.find(line.pattern)
@@ -172,7 +170,7 @@ module Codeowners
         when 'd'
           line.remove!
         when 'q'
-          @ignore[:suggestions] = true
+          @quit = true
         end
       end
 
@@ -183,7 +181,7 @@ module Codeowners
           (i) ignore
           (e) edit the pattern
           (d) delete the pattern
-          (q) ignore all
+          (q) quit
         QUESTION
       end
 
@@ -192,7 +190,7 @@ module Codeowners
         when 'e' then pattern_change(line)
         when 'i' then nil
         when 'd' then line.remove!
-        when 'q' then @ignore[:suggestions] = true
+        when 'q' then @quit = true
         end
       end
 
@@ -201,7 +199,7 @@ module Codeowners
           (e) edit the pattern
           (d) delete the pattern
           (i) ignore
-          (q) ignore all
+          (q) quit
         QUESTION
       end
 
