@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'line'
+require_relative '../owner'
 
 module Codeowners
   class Checker
@@ -12,7 +13,7 @@ module Codeowners
 
         def self.match?(line)
           _pattern, *owners = line.split(/\s+/)
-          owners.any? && owners.all? { |owner| owner.include?('@') }
+          Owner.valid?(*owners)
         end
 
         def initialize(line)

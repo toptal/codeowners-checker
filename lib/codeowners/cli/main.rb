@@ -6,6 +6,7 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative '../checker/owner'
 
 module Codeowners
   module Cli
@@ -22,8 +23,8 @@ module Codeowners
         @codeowners_changed = false
         @repo = repo
         setup_checker
-        @checker.check!
         if options[:interactive]
+          @checker.fix!
           if @codeowners_changed
             write_codeowners
             @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
@@ -53,7 +54,7 @@ module Codeowners
         @checker = Codeowners::Checker.new(@repo, options[:from], to)
         @checker.when_useless_pattern = method(:suggest_fix_for)
         @checker.when_new_file = method(:suggest_add_to_codeowners)
-        @checker.transformers << method(:unrecognized_line)
+        @checker.transformers << method(:unrecognized_line) if options[:interactive]
       end
 
       def write_codeowners
@@ -91,12 +92,13 @@ module Codeowners
         list_owners(sorted_owners)
         loop do
           owner = new_owner(sorted_owners)
-          line = "#{file} #{owner}"
-          new_line = Codeowners::Checker::Group::Line.build(line)
 
-          return new_line if new_line.pattern?
+          unless Codeowners::Checker::Owner.valid?(owner)
+            puts "#{owner.inspect} is not a valid owner name. Try again."
+            next
+          end
 
-          puts "#{owner.inspect} is not a valid owner name. Try again."
+          return Codeowners::Checker::Group::Pattern.new("#{file} #{owner}")
         end
       end
 
