@@ -19,6 +19,7 @@ module Codeowners
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
+        @codeowners_changed = false
         @repo = repo
         setup_checker
         @checker.check!
@@ -60,12 +61,10 @@ module Codeowners
       end
 
       def suggest_add_to_codeowners(file)
-        return if @quit
-
         case add_to_codeowners_dialog(file)
         when 'y' then add_to_codeowners(file)
         when 'i' then return
-        when 'q' then @quit = true
+        when 'q' then throw :user_quit
         end
       end
 
@@ -74,7 +73,7 @@ module Codeowners
           File added: #{file.inspect}. Add owner to the CODEOWNERS file?
           (y) yes
           (i) ignore
-          (q) quit
+          (q) quit and save
         QUESTION
       end
 
@@ -88,28 +87,27 @@ module Codeowners
       end
 
       def create_new_pattern(file)
-        list_owners
+        sorted_owners = @checker.main_group.owners.sort
+        list_owners(sorted_owners)
         loop do
-          owner = new_owner
+          owner = new_owner(sorted_owners)
           line = "#{file} #{owner}"
           new_line = Codeowners::Checker::Group::Line.build(line)
 
           return new_line if new_line.pattern?
 
-          puts "#{owner.inspect} is not a valid owner name. Try again." unless new_line.pattern?
+          puts "#{owner.inspect} is not a valid owner name. Try again."
         end
       end
 
-      def list_owners
+      def list_owners(sorted_owners)
         puts 'Owners:'
-        sorted_owners = @checker.main_group.owners.sort
         sorted_owners.each_with_index { |owner, i| puts "#{i + 1} - #{owner}" }
         puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
       end
 
-      def new_owner
+      def new_owner(sorted_owners)
         owner = ask('New owner: ')
-        sorted_owners = @checker.main_group.owners.sort
 
         if owner.to_i.between?(1, sorted_owners.length)
           sorted_owners[owner.to_i - 1]
@@ -143,8 +141,6 @@ module Codeowners
       end
 
       def suggest_fix_for(line)
-        return if @quit
-
         search = FuzzyMatch.new(line.suggest_files_for_pattern)
         suggestion = search.find(line.pattern)
 
@@ -170,7 +166,7 @@ module Codeowners
         when 'd'
           line.remove!
         when 'q'
-          @quit = true
+          throw :user_quit
         end
       end
 
@@ -181,7 +177,7 @@ module Codeowners
           (i) ignore
           (e) edit the pattern
           (d) delete the pattern
-          (q) quit
+          (q) quit and save
         QUESTION
       end
 
@@ -190,7 +186,7 @@ module Codeowners
         when 'e' then pattern_change(line)
         when 'i' then nil
         when 'd' then line.remove!
-        when 'q' then @quit = true
+        when 'q' then throw :user_quit
         end
       end
 
@@ -199,7 +195,7 @@ module Codeowners
           (e) edit the pattern
           (d) delete the pattern
           (i) ignore
-          (q) quit
+          (q) quit and save
         QUESTION
       end
 
@@ -253,7 +249,7 @@ module Codeowners
 
       LABELS = {
         missing_ref: 'No owner defined',
-        useless_pattern: 'Useeless patterns'
+        useless_pattern: 'Useless patterns'
       }.freeze
 
       def report_errors!

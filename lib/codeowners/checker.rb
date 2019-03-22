@@ -35,10 +35,12 @@ module Codeowners
     end
 
     def check!
-      @results ||= {
-        missing_ref: missing_reference,
-        useless_pattern: useless_pattern
-      }
+      catch(:user_quit) do
+        @results ||= {
+          missing_ref: missing_reference,
+          useless_pattern: useless_pattern
+        }
+      end
     end
 
     def changes_for_patterns(patterns)
