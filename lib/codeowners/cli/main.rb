@@ -1,11 +1,10 @@
 # frozen_string_literal: true
 
-require 'fuzzy_match'
-
 require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative 'suggestion_builder'
 require_relative '../checker/owner'
 
 module Codeowners
@@ -64,7 +63,7 @@ module Codeowners
       def suggest_add_to_codeowners(file)
         case add_to_codeowners_dialog(file)
         when 'y' then add_to_codeowners(file)
-        when 'i' then return
+        when 'i' then nil
         when 'q' then throw :user_quit
         end
       end
@@ -143,10 +142,10 @@ module Codeowners
       end
 
       def suggest_fix_for(line)
-        search = FuzzyMatch.new(line.suggest_files_for_pattern)
-        suggestion = search.find(line.pattern)
+        return unless options[:interactive]
 
-        puts "Pattern #{line.pattern.inspect} doesn't match." if options[:interactive]
+        puts "Pattern #{line.pattern.inspect} doesn't match."
+        suggestion = SuggestionBuilder.new(line.pattern).pick_suggestion
 
         # TODO: Handle duplicate patterns.
         if suggestion
