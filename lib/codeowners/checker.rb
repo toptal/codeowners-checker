@@ -34,11 +34,8 @@ module Codeowners
       changes_to_analyze.select { |_k, v| v == 'A' }.keys
     end
 
-    def check!
-      @results ||= {
-        missing_ref: missing_reference,
-        useless_pattern: useless_pattern
-      }
+    def fix!
+      catch(:user_quit) { results }
     end
 
     def changes_for_patterns(patterns)
@@ -108,7 +105,7 @@ module Codeowners
     end
 
     def consistent?
-      check!.values.all?(&:empty?)
+      results.values.all?(&:empty?)
     end
 
     def commit_changes!
@@ -120,6 +117,16 @@ module Codeowners
       directories = ['', '.github', 'docs', '.gitlab']
       paths = directories.map { |dir| File.join(@repo_dir, dir, 'CODEOWNERS') }
       Dir.glob(paths).first || paths.first
+    end
+
+    private
+
+    def results
+      @results ||=
+        {
+          missing_ref: missing_reference,
+          useless_pattern: useless_pattern
+        }
     end
   end
 end

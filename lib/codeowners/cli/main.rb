@@ -6,6 +6,7 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative '../checker/owner'
 
 module Codeowners
   module Cli
@@ -22,8 +23,8 @@ module Codeowners
         @codeowners_changed = false
         @repo = repo
         setup_checker
-        @checker.check!
         if options[:interactive]
+          @checker.fix!
           if @codeowners_changed
             write_codeowners
             @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
@@ -53,7 +54,7 @@ module Codeowners
         @checker = Codeowners::Checker.new(@repo, options[:from], to)
         @checker.when_useless_pattern = method(:suggest_fix_for)
         @checker.when_new_file = method(:suggest_add_to_codeowners)
-        @checker.transformers << method(:unrecognized_line)
+        @checker.transformers << method(:unrecognized_line) if options[:interactive]
       end
 
       def write_codeowners
@@ -61,15 +62,24 @@ module Codeowners
       end
 
       def suggest_add_to_codeowners(file)
-        return unless yes?("File added: #{file.inspect}. Add owner to the CODEOWNERS file?")
-
-        owner = ask('File owner(s): ')
-        new_line = create_new_pattern(file, owner)
-
-        unless new_line.pattern?
-          puts "#{owner.inspect} is not a valid owner name."
-          return
+        case add_to_codeowners_dialog(file)
+        when 'y' then add_to_codeowners(file)
+        when 'i' then return
+        when 'q' then throw :user_quit
         end
+      end
+
+      def add_to_codeowners_dialog(file)
+        ask(<<~QUESTION, limited_to: %w[y i q])
+          File added: #{file.inspect}. Add owner to the CODEOWNERS file?
+          (y) yes
+          (i) ignore
+          (q) quit and save
+        QUESTION
+      end
+
+      def add_to_codeowners(file)
+        new_line = create_new_pattern(file)
 
         subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
         add_pattern(new_line, subgroups)
@@ -77,9 +87,37 @@ module Codeowners
         @codeowners_changed = true
       end
 
-      def create_new_pattern(file, owner)
-        line = "#{file} #{owner}"
-        Codeowners::Checker::Group::Line.build(line)
+      def create_new_pattern(file)
+        sorted_owners = @checker.main_group.owners.sort
+        list_owners(sorted_owners)
+        loop do
+          owner = new_owner(sorted_owners)
+
+          unless Codeowners::Checker::Owner.valid?(owner)
+            puts "#{owner.inspect} is not a valid owner name. Try again."
+            next
+          end
+
+          return Codeowners::Checker::Group::Pattern.new("#{file} #{owner}")
+        end
+      end
+
+      def list_owners(sorted_owners)
+        puts 'Owners:'
+        sorted_owners.each_with_index { |owner, i| puts "#{i + 1} - #{owner}" }
+        puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
+      end
+
+      def new_owner(sorted_owners)
+        owner = ask('New owner: ')
+
+        if owner.to_i.between?(1, sorted_owners.length)
+          sorted_owners[owner.to_i - 1]
+        elsif owner.empty?
+          @config.default_owner
+        else
+          owner
+        end
       end
 
       def add_pattern(pattern, subgroups)
@@ -129,16 +167,19 @@ module Codeowners
           pattern_change(line)
         when 'd'
           line.remove!
+        when 'q'
+          throw :user_quit
         end
       end
 
       def make_suggestion(suggestion)
-        ask(<<~QUESTION, limited_to: %w[y i e d])
+        ask(<<~QUESTION, limited_to: %w[y i e d q])
           Replace with: #{suggestion.inspect}?
           (y) yes
           (i) ignore
           (e) edit the pattern
           (d) delete the pattern
+          (q) quit and save
         QUESTION
       end
 
@@ -147,14 +188,16 @@ module Codeowners
         when 'e' then pattern_change(line)
         when 'i' then nil
         when 'd' then line.remove!
+        when 'q' then throw :user_quit
         end
       end
 
       def pattern_suggest_fixing
-        ask(<<~QUESTION, limited_to: %w[i e d])
+        ask(<<~QUESTION, limited_to: %w[i e d q])
           (e) edit the pattern
           (d) delete the pattern
           (i) ignore
+          (q) quit and save
         QUESTION
       end
 
@@ -208,7 +251,7 @@ module Codeowners
 
       LABELS = {
         missing_ref: 'No owner defined',
-        useless_pattern: 'Useeless patterns'
+        useless_pattern: 'Useless patterns'
       }.freeze
 
       def report_errors!
