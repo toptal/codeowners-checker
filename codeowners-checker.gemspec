@@ -14,9 +14,7 @@ Gem::Specification.new do |spec|
   spec.summary       = 'Check consistency of Github CODEOWNERS and git changes.'
   spec.license       = 'MIT'
 
-  spec.files = `git ls-files -z`.split("\x0").reject do |f|
-    f.match(%r{^(test|spec|features)/})
-  end
+  spec.files = Dir["codeowners-checker.gemspec", "*.{md,txt}", "lib/**/*.rb"]
   spec.bindir        = 'bin'
   spec.executables   = ['codeowners-checker']
   spec.require_paths = ['lib']
