@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Codeowners::Cli::Codeowners::Cli::SuggestFileFromPattern do
+RSpec.describe Codeowners::Cli::SuggestFileFromPattern do
   subject { described_class.new(line) }
 
   let(:line) { 'file/not/found @owner' }

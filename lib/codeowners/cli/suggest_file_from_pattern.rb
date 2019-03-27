@@ -2,15 +2,14 @@
 
 module Codeowners
   module Cli
-
     # Case the user have `fzf` installed, it works building suggestions from
     # `fzf`. See more on #fzf_query.
     #
     # Without `fzf` it tries to suggest patterns using fuzzy match search picking
     # all the files from the parent folder of the current pattern.
-    class SuggestionBuilder
+    class SuggestFileFromPattern
       def initialize(pattern)
-        @pattern =  pattern
+        @pattern = pattern
       end
 
       # Pick suggestion from current pattern
@@ -38,21 +37,20 @@ module Codeowners
       end
 
       def pick_suggestions
-        raise NotImplementedError.new
+        raise NotImplementedError
       end
     end
 
+    # Bring a list of suggestions using `fzf` from the current folder
     class FilesFromFZFSearch < SuggestionStrategy
-      # Bring a list of suggestions using `fzf` from the current folder
+      # Open `fzf` with {#query} to suggest a list of matching files
       def pick_suggestions
         `fzf --height 50% --reverse -q #{query.inspect}`
           .lines.first&.chomp
       end
 
       # Returns shortcut of the current folders
-      #
       # => 'some/folder/with/file.txt' to 'some/fowi/file.txt'
-      #
       def query
         dir, _, file = @pattern.gsub(/[_\-\*]+/, '').rpartition '/'
         dir.gsub(%r{/(\w{,2})[^/]+}, '\1') + # map 2 chars per folder
@@ -70,6 +68,7 @@ module Codeowners
         search = FuzzyMatch.new(suggest_files_for_pattern)
         search.find(@pattern)
       end
+
       # If the pattern use "*/*" it will consider "."
       # If the pattern uses Static files, it tries to reach the parent.
       # If the pattern revers to the root folder, pick all files from the

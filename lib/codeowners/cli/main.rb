@@ -4,7 +4,7 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
-require_relative 'codeowners/cli/suggest_file_from_pattern'
+require_relative 'suggest_file_from_pattern'
 require_relative '../checker/owner'
 
 module Codeowners
