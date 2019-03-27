@@ -21,11 +21,11 @@ module Codeowners
       end
 
       def strategy_class
-        installed_fzf? ? FilesFromFZFSearch : FilesFromParentFolder
+        SuggestFileFromPattern.installed_fzf? ? FilesFromFZFSearch : FilesFromParentFolder
       end
 
       # Checks if fzf is installed.
-      def installed_fzf?
+      def self.installed_fzf?
         `command -v fzf` != ''
       end
     end

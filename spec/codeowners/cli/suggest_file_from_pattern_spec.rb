@@ -7,7 +7,7 @@ RSpec.describe Codeowners::Cli::SuggestFileFromPattern do
 
   describe '#strategy' do
     context 'when have fzf installed' do
-      before { allow(subject).to receive(:installed_fzf?).and_return(true) }
+      before { allow(described_class).to receive(:installed_fzf?).and_return(true) }
 
       it 'suggest with fzf' do
         expect(subject.strategy_class).to eq(Codeowners::Cli::FilesFromFZFSearch)
@@ -15,7 +15,7 @@ RSpec.describe Codeowners::Cli::SuggestFileFromPattern do
     end
 
     context 'without fzf' do
-      before { allow(subject).to receive(:installed_fzf?).and_return(false) }
+      before { allow(described_class).to receive(:installed_fzf?).and_return(false) }
 
       it 'suggests with FuzzyMatch gem' do
         expect(subject.strategy_class).to eq(Codeowners::Cli::FilesFromParentFolder)

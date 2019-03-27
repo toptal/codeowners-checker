@@ -3,6 +3,7 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'codeowners/checker/version'
+require 'codeowners/cli/suggest_file_from_pattern'
 
 Gem::Specification.new do |spec|
   spec.name          = 'codeowners-checker'
@@ -30,4 +31,10 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop', '~> 0.61.1'
   spec.add_development_dependency 'rubocop-rspec', '~> 1.30'
   spec.add_development_dependency 'simplecov', '~> 0.16.1'
+
+  unless Codeowners::Cli::SuggestFileFromPattern.installed_fzf?
+    spec.post_install_message = <<~MESSAGE
+      Please, install `fzf` for a better experience.
+    MESSAGE
+  end
 end
