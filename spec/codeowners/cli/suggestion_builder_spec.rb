@@ -1,17 +1,16 @@
 # frozen_string_literal: true
 
-RSpec.describe Codeowners::Cli::SuggestionBuilder do
+RSpec.describe Codeowners::Cli::Codeowners::Cli::SuggestFileFromPattern do
   subject { described_class.new(line) }
 
   let(:line) { 'file/not/found @owner' }
 
-  describe '.pick_suggestions' do
+  describe '#strategy' do
     context 'when have fzf installed' do
       before { allow(subject).to receive(:installed_fzf?).and_return(true) }
 
       it 'suggest with fzf' do
-        expect(subject).to receive(:suggest_with_fzf).and_return(['line'])
-        subject.pick_suggestion
+        expect(subject.strategy_class).to eq(Codeowners::Cli::FilesFromFZFSearch)
       end
     end
 
@@ -19,18 +18,17 @@ RSpec.describe Codeowners::Cli::SuggestionBuilder do
       before { allow(subject).to receive(:installed_fzf?).and_return(false) }
 
       it 'suggests with FuzzyMatch gem' do
-        expect(subject).to receive(:suggest_with_fuzzy_match).and_return(['line'])
-        subject.pick_suggestion
+        expect(subject.strategy_class).to eq(Codeowners::Cli::FilesFromParentFolder)
       end
     end
   end
 
-  describe '#fuzzy_match_query' do
+  describe Codeowners::Cli::FilesFromParentFolder do
     context 'with multiple stars' do
       let(:line) { 'app/*/*' }
 
       it 'ignore multiple stars' do
-        expect(subject.fuzzy_match_query).to eq('app/*')
+        expect(subject.query).to eq('app/*')
       end
     end
 
@@ -38,7 +36,7 @@ RSpec.describe Codeowners::Cli::SuggestionBuilder do
       let(:line) { 'app/*' }
 
       it 'keeps the query' do
-        expect(subject.fuzzy_match_query).to eq('app/*')
+        expect(subject.query).to eq('app/*')
       end
     end
 
@@ -46,7 +44,7 @@ RSpec.describe Codeowners::Cli::SuggestionBuilder do
       let(:line) { 'spec/*/*_spec.rb' }
 
       it 'generalize to the parent folder' do
-        expect(subject.fuzzy_match_query).to eq('spec/*')
+        expect(subject.query).to eq('spec/*')
       end
     end
 
@@ -54,17 +52,17 @@ RSpec.describe Codeowners::Cli::SuggestionBuilder do
       let(:line) { 'a/very/long/sub/folder/to/file.txt' }
 
       it 'generalize to the parent folder' do
-        expect(subject.fuzzy_match_query).to eq('a/very/long/sub/folder/to/*')
+        expect(subject.query).to eq('a/very/long/sub/folder/to/*')
       end
     end
   end
 
-  describe '#fzf_query' do
+  describe Codeowners::Cli::FilesFromFZFSearch do
     context 'with deep folder specification' do
       let(:line) { 'a/very/long/folder/to_file.txt' }
 
       it 'creates shortcuts with the first two chars of each folder' do
-        expect(subject.fzf_query).to eq('avelofotofile')
+        expect(subject.query).to eq('avelofotofile')
       end
     end
 
@@ -72,7 +70,7 @@ RSpec.describe Codeowners::Cli::SuggestionBuilder do
       let(:line) { 'spec/models/*/*_spec.rb' }
 
       it 'generalize to query' do
-        expect(subject.fzf_query).to eq('specmo/spec')
+        expect(subject.query).to eq('specmo/spec')
       end
     end
   end

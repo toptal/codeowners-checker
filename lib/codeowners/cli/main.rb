@@ -4,7 +4,7 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
-require_relative 'suggestion_builder'
+require_relative 'codeowners/cli/suggest_file_from_pattern'
 require_relative '../checker/owner'
 
 module Codeowners
@@ -145,7 +145,7 @@ module Codeowners
         return unless options[:interactive]
 
         puts "Pattern #{line.pattern.inspect} doesn't match."
-        suggestion = SuggestionBuilder.new(line.pattern).pick_suggestion
+        suggestion = Codeowners::Cli::SuggestFileFromPattern.new(line.pattern).pick_suggestion
 
         # TODO: Handle duplicate patterns.
         if suggestion
