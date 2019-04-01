@@ -32,9 +32,11 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rubocop-rspec', '~> 1.30'
   spec.add_development_dependency 'simplecov', '~> 0.16.1'
 
-  unless Codeowners::Cli::SuggestFileFromPattern.installed_fzf?
-    spec.post_install_message = <<~MESSAGE
+  unless ENV['TRAVIS']
+    unless Codeowners::Cli::SuggestFileFromPattern.installed_fzf?
+      spec.post_install_message = <<~MESSAGE
       Please, install `fzf` for a better experience.
-    MESSAGE
+      MESSAGE
+    end
   end
 end
