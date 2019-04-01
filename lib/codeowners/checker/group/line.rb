@@ -9,7 +9,7 @@ module Codeowners
       class Line
         attr_accessor :parent
 
-        def self.build(line, transform_line_procs: nil)
+        def self.build(line)
           subclasses.each do |klass|
             return klass.new(line) if klass.match?(line)
           end
@@ -46,7 +46,7 @@ module Codeowners
 
         def remove!
           parent&.remove(self)
-          parent = nil
+          self.parent = nil
         end
 
         def ==(other)

@@ -10,7 +10,7 @@ require_relative '../checker/owner'
 module Codeowners
   module Cli
     # Command Line Interface used by bin/codeowners-checker.
-    class Main < Base
+    class Main < Base # rubocop:disable Metrics/ClassLength
       LABEL = { missing_ref: 'Missing references', useless_pattern: 'No files matching with the pattern' }.freeze
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
@@ -23,20 +23,9 @@ module Codeowners
         @repo = repo
         setup_checker
         if options[:interactive]
-          @checker.fix!
-          if @codeowners_changed
-            write_codeowners
-            @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
-          end
+          interactive_mode
         else
-          if @checker.consistent?
-            puts '✅ File is consistent'
-            exit 0
-          else
-            puts "File #{@checker.codeowners_filename} is inconsistent:"
-            report_errors!
-            exit -1
-          end
+          report_inconsistencies
         end
       end
 
@@ -48,7 +37,26 @@ module Codeowners
 
       private
 
-      def setup_checker
+      def interactive_mode
+        @checker.fix!
+        return unless @codeowners_changed
+
+        write_codeowners
+        @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
+      end
+
+      def report_inconsistencies
+        if @checker.consistent?
+          puts '✅ File is consistent'
+          exit 0
+        else
+          puts "File #{@checker.codeowners_filename} is inconsistent:"
+          report_errors!
+          exit(-1)
+        end
+      end
+
+      def setup_checker # rubocop:disable Metrics/AbcSize
         to = options[:to] != 'index' ? options[:to] : nil
         @checker = Codeowners::Checker.new(@repo, options[:from], to)
         @checker.when_useless_pattern = method(:suggest_fix_for)
@@ -160,14 +168,10 @@ module Codeowners
       def apply_suggestion(line, suggestion)
         case make_suggestion(suggestion)
         when 'i' then nil
-        when 'y'
-          line.pattern = suggestion
-        when 'e'
-          pattern_change(line)
-        when 'd'
-          line.remove!
-        when 'q'
-          throw :user_quit
+        when 'y' then line.pattern = suggestion
+        when 'e' then pattern_change(line)
+        when 'd' then line.remove!
+        when 'q' then throw :user_quit
         end
       end
 
@@ -228,10 +232,11 @@ module Codeowners
 
       def unrecognized_line_new_line
         line = nil
-        begin
+        loop do
           new_line_string = ask('New line: ')
           line = Codeowners::Checker::Group::Line.build(new_line_string)
-        end while line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
+          break unless line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
+        end
         @codeowners_changed = true
         line
       end

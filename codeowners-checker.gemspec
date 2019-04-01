@@ -35,7 +35,7 @@ Gem::Specification.new do |spec|
   unless ENV['TRAVIS']
     unless Codeowners::Cli::SuggestFileFromPattern.installed_fzf?
       spec.post_install_message = <<~MESSAGE
-      Please, install `fzf` for a better experience.
+        Please, install `fzf` for a better experience.
       MESSAGE
     end
   end

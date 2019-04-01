@@ -21,6 +21,7 @@ Git::Lib.class_eval do
 end
 
 module Codeowners
+  # Default git wrapper without configuration
   class AnonymousGit
     include Git
   end

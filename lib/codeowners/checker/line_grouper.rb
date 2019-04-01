@@ -13,6 +13,9 @@ module Codeowners
         @lines = lines
       end
 
+      # rubocop:disable Metrics/AbcSize
+      # rubocop:disable Metrics/CyclomaticComplexity
+      # rubocop:disable Metrics/MethodLength
       def call
         lines.each_with_index do |line, index|
           case line
@@ -46,6 +49,9 @@ module Codeowners
         end
         group_buffer.first
       end
+      # rubocop:enable Metrics/AbcSize
+      # rubocop:enable Metrics/CyclomaticComplexity
+      # rubocop:enable Metrics/MethodLength
 
       private
 
@@ -55,7 +61,7 @@ module Codeowners
         index.positive? && lines[index - 1].is_a?(Codeowners::Checker::Group::Empty)
       end
 
-      def new_owner?(line, index)
+      def new_owner?(line, index) # rubocop:disable Metrics/MethodLength
         if previous_line_empty?(index)
           offset = 2
           while (index - offset).positive?
