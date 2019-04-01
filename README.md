@@ -9,7 +9,6 @@ between two git revisions.
 
 ## Usage
 
-
 ### Configure
 
     $  codeowners-checker config owner <@owner>
@@ -113,6 +112,9 @@ or delete the pattern. If the user decides to delete the last pattern in a group
 the comments defining the group are deleted as well as the pattern.
 
 ![Useless pattern example](demos/useless_pattern.svg)
+
+You can also use [fzf](https://github.com/junegunn/fzf) to pick better results
+and interactively choose the right file.
 
 Invalid patterns were fixed and the group `Security` was removed when deleting the only pattern
 in the group:

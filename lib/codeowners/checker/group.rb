@@ -44,6 +44,8 @@ module Codeowners
 
       # Returns an array of strings representing the structure of the group.
       # It indent internal subgroups for readability and debugging purposes.
+      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/AbcSize
       def to_tree(indentation = '')
         @list.each_with_index.flat_map do |item, index|
           if indentation.empty?
@@ -57,6 +59,8 @@ module Codeowners
           end
         end
       end
+      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/AbcSize
 
       def owner
         owners.first
@@ -129,6 +133,7 @@ module Codeowners
         end.compact
       end
 
+      # rubocop:disable Metrics/AbcSize
       def insert_at_index(line)
         new_patterns_sorted = @list.grep(Pattern).dup.push(line).sort
         previous_line_index = new_patterns_sorted.index { |l| l.equal? line } - 1
@@ -142,6 +147,7 @@ module Codeowners
           find_last_line_of_initial_comments
         end
       end
+      # rubocop:enable Metrics/AbcSize
 
       def find_last_line_of_initial_comments
         @list.each_with_index do |item, index|

@@ -26,3 +26,9 @@ RSpec/MessageSpies:
 
 RSpec/SubjectStub:
   Enabled: false
+
+RSpec/NestedGroups:
+    Max: 4
+
+Metrics/ClassLength:
+    Max: 200

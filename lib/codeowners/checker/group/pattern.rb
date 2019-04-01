@@ -9,7 +9,8 @@ module Codeowners
       # Defines and manages line type pattern.
       # Parse the line into pattern, owners and whitespaces.
       class Pattern < Line
-        attr_accessor :pattern, :owners, :whitespace
+        attr_accessor :owners, :whitespace
+        attr_reader :pattern
 
         def self.match?(line)
           _pattern, *owners = line.split(/\s+/)

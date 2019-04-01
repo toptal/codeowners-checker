@@ -9,7 +9,7 @@ module Codeowners
       class Line
         attr_accessor :parent
 
-        def self.build(line, transform_line_procs: nil)
+        def self.build(line)
           subclasses.each do |klass|
             return klass.new(line) if klass.match?(line)
           end
@@ -46,7 +46,7 @@ module Codeowners
 
         def remove!
           parent&.remove(self)
-          parent = nil
+          self.parent = nil
         end
 
         def ==(other)
@@ -57,25 +57,6 @@ module Codeowners
 
         def <=>(other)
           to_s <=> other.to_s
-        end
-
-        # Pick all files from parent folder of pattern.
-        # This is used to build a list of suggestions case the pattern is not
-        # matching.
-        # If the pattern use "*/*" it will consider "."
-        # If the pattern uses Static files, it tries to reach the parent.
-        # If the pattern revers to the root folder, pick all files from the
-        # current pattern dir.
-        def suggest_files_for_pattern
-          parent_folders = pattern.split('/')[0..-2]
-          parent_folders << '*' if parent_folders[-1] != '*'
-          files = Dir[File.join(*parent_folders)] || []
-          files.map(&method(:normalize_path))
-        end
-
-        def normalize_path(file)
-          Pathname.new(file)
-                  .relative_path_from(Pathname.new('.')).to_s
         end
       end
     end

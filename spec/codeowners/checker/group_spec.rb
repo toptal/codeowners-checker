@@ -203,8 +203,8 @@ RSpec.describe Codeowners::Checker::Group do
   end
 
   describe '#insert' do
-    context 'when inserting in a group without a subgroup' do
-      context 'in the middle of the group' do
+    context 'without a subgroup' do
+      context 'when in the middle of the group' do
         it 'inserts new pattern to the group in alphabetical order' do
           group1.insert(pattern)
           expect(group1.to_content).to eq(
@@ -214,7 +214,7 @@ RSpec.describe Codeowners::Checker::Group do
         end
       end
 
-      context 'when inserting in the first row after the initial comments' do
+      context 'with initial comments' do
         it 'inserts new pattern to the first row' do
           group1.insert(pattern1)
           expect(group1.to_content).to eq(
@@ -224,7 +224,7 @@ RSpec.describe Codeowners::Checker::Group do
         end
       end
 
-      context 'when inserting in the first row of a group with no comment' do
+      context 'without initial comments' do
         it 'inserts the pattern in the first row' do
           no_name.insert(pattern1)
           expect(no_name.to_content).to eq(
