@@ -47,7 +47,7 @@ module Codeowners
         codeowners.each_with_object(hash_of_arrays) do |line, patterns_by_owner|
           next unless line.pattern?
 
-          line.owners.each { |owner| patterns_by_owner[owner] << line.pattern }
+          line.owners.each { |owner| patterns_by_owner[owner] << line.pattern.gsub(%r{^/}, '') }
         end
     end
 
