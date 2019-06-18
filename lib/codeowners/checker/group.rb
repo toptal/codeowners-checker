@@ -108,7 +108,7 @@ module Codeowners
 
       def remove(line)
         @list.safe_delete(line)
-        remove! unless any?(Pattern)
+        remove! unless any? { |object| object.is_a? Pattern }
       end
 
       def remove!
