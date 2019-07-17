@@ -26,7 +26,7 @@ module Codeowners
 
       # Checks if fzf is installed.
       def self.installed_fzf?
-        `command -v fzf` != ''
+        system('fzf --version > /dev/null 2>&1')
       end
     end
 
