@@ -129,7 +129,7 @@ RSpec.describe Codeowners::Checker do
           Dir.mkdir('app')
           File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
           File.open(filename2, 'w+') { |file| file.puts '# add some ruby code here' }
-          File.open('.github/CODEOWNERS', 'a+') { |f| f.puts '*.js @owner3' }
+          File.open('.github/CODEOWNERS', 'a+') { |f| f.puts '**.js @owner3' }
 
           git.add filename
           git.add filename2

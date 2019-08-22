@@ -26,6 +26,7 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
         'dir/file.rb' => false,
         'dir/dir1/file.rb' => true,
         'dir/dir1/other_file.rb' => true,
+        'other/dir/dir1/other_file.rb' => false,
         'dir/dir1/dir2/file.rb' => false
       },
       'dir/*/file.rb @owner' => {
@@ -59,6 +60,15 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
       },
       '*.js @owner' => {
         'file.rb' => false,
+        'file.js' => true,
+        'another_file.js' => true,
+        'dir/file.js' => false,
+        'dir/dir1/file.rb' => false,
+        'dir/dir1/file1.js' => false,
+        'dir/dir1/dir2/file.js' => false
+      },
+      '**.js @owner' => {
+        'file.rb' => false,
         'dir/file.js' => true,
         'dir/dir1/file.rb' => false,
         'dir/dir1/file1.js' => true,
@@ -66,10 +76,14 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
       },
       '* @owner' => {
         '.file.rb' => true,
+        'directory/.file.rb' => false,
+        'directory/subdirectory/file.rb' => false
+      },
+      '** @owner' => {
+        '.file.rb' => true,
         'directory/.file.rb' => true,
         'directory/subdirectory/file.rb' => true
       }
-
     }.each do |content, tests|
       context "when the line is #{content.inspect}" do
         let(:line) { content }
