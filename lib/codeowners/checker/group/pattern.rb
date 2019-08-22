@@ -33,10 +33,14 @@ module Codeowners
         end
 
         def match_file?(file)
-          if !pattern.include?('/') || pattern.include?('**')
-            File.fnmatch(pattern.gsub(%r{^/}, ''), file, File::FNM_DOTMATCH)
+          File.fnmatch(pattern.gsub(%r{^/}, ''), file, fn_options)
+        end
+
+        def fn_options
+          if pattern.include?('**')
+            File::FNM_DOTMATCH
           else
-            File.fnmatch(pattern.gsub(%r{^/}, ''), file, File::FNM_PATHNAME | File::FNM_DOTMATCH)
+            File::FNM_DOTMATCH | File::FNM_PATHNAME
           end
         end
 
