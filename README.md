@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/toptal/codeowners-checker.svg?style=svg)](https://circleci.com/gh/toptal/codeowners-checker)
+
 # Codeowners Checker
 
 This gem checks if the GitHub codeowners are specified to all files changes
