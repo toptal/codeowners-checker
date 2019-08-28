@@ -38,7 +38,8 @@ module Codeowners
       private
 
       def list
-        @list ||= @file_manager.content.yield_self do |list|
+        @list ||= begin
+          list = @file_manager.content
           transform_line_procs.each do |transform_line_proc|
             list = list.flat_map { |line| transform_line_proc.call(line) }.compact
           end

@@ -9,7 +9,7 @@ module Codeowners
       # of a group.
       class GroupEndComment < Comment
         def self.match?(line)
-          line.lstrip.start_with?(/^#+ END/)
+          line.lstrip =~ /^#+ END/
         end
       end
     end

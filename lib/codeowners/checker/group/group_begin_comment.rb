@@ -9,7 +9,7 @@ module Codeowners
       # of a group.
       class GroupBeginComment < Comment
         def self.match?(line)
-          line.lstrip.start_with?(/^#+ BEGIN/)
+          line.lstrip =~ /^#+ BEGIN/
         end
       end
     end
