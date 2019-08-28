@@ -1,0 +1,123 @@
+# Check https://circleci.com/docs/2.0/language-ruby/ for more details
+version: 2.1
+workflows:
+  build:
+    jobs:
+      - rubocop
+      - rspec-ruby-23
+      - rspec-ruby-24
+      - rspec-ruby-25
+      - rspec-ruby-26
+      - rspec-ruby-rc
+      - rspec-jruby
+
+commands:
+  rspec-test:
+    description: Test rspec in current ruby
+    parameters:
+      pre-steps:
+        description: Necessary steps after checkout
+        type: steps
+        default: []
+    steps:
+      - checkout
+      - run:
+          name: ruby version
+          command: |
+            ruby -e "STDERR.puts RUBY_VERSION; puts RUBY_VERSION.gsub(/^(\d+)\.(\d+)\..*/, '\1_\2')" > .ruby.version
+      - steps: << parameters.pre-steps >>
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum ".ruby.version" }}-{{ checksum "Gemfile.lock" }}
+      - run:
+          name: install dependencies
+          command: |
+            bundle install --jobs=4 --retry=3 --path vendor/bundle
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: dependencies-{{ checksum ".ruby.version" }}-{{ checksum "Gemfile.lock" }}
+      - run:
+          name: run tests
+          command: |
+            ruby -v
+            git config --global user.email "you@example.com"
+            git config --global user.name "Your Name"
+            mkdir /tmp/test-results
+            TEST_FILES="$(circleci tests glob "spec/**/*_spec.rb" | circleci tests split --split-by=timings)"
+            bundle exec rspec --format progress --format RspecJunitFormatter --out /tmp/test-results/rspec.xml $TEST_FILES
+      - store_test_results:
+          path: /tmp/test-results
+
+jobs:
+  rubocop:
+    docker:
+      - image: circleci/ruby:2.6
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run:
+          name: ruby version
+          command: |
+            ruby -e "STDERR.puts RUBY_VERSION; puts RUBY_VERSION.gsub(/^(\d+)\.(\d+)\..*/, '\1_\2')" > .ruby.version
+      - restore_cache:
+          keys:
+            - dependencies-{{ checksum ".ruby.version" }}-{{ checksum "Gemfile.lock" }}
+      - run:
+          name: install dependencies
+          command: |
+            bundle install --jobs=4 --retry=3 --path vendor/bundle --binstubs=/usr/local/bundle/bin
+      - save_cache:
+          paths:
+            - ./vendor/bundle
+          key: dependencies-{{ checksum ".ruby.version" }}-{{ checksum "Gemfile.lock" }}
+      - run:
+          name: run rubocop
+          command: |
+            bundle exec rubocop --format simple
+
+  rspec-ruby-23:
+    docker:
+      - image: circleci/ruby:2.3
+    working_directory: ~/repo
+    steps:
+      - rspec-test
+
+  rspec-ruby-24:
+    docker:
+      - image: circleci/ruby:2.4
+    working_directory: ~/repo
+    steps:
+      - rspec-test
+
+  rspec-ruby-25:
+    docker:
+      - image: circleci/ruby:2.5
+    working_directory: ~/repo
+    steps:
+      - rspec-test
+
+  rspec-ruby-26:
+    docker:
+      - image: circleci/ruby:2.6
+    working_directory: ~/repo
+    steps:
+      - rspec-test
+
+  rspec-ruby-rc:
+    docker:
+      - image: circleci/ruby:rc
+    working_directory: ~/repo
+    steps:
+      - rspec-test:
+          pre-steps:
+            - run: gem install bundler$(awk 'BEGIN{bun=0} (bun==1){ print ":"$1 ; bun=2;} /BUNDLED WITH/{bun=1}' Gemfile.lock)
+
+  rspec-jruby:
+    docker:
+      - image: circleci/jruby:latest
+    working_directory: ~/repo
+    steps:
+      - rspec-test:
+          pre-steps:
+            - run: gem install bundler$(awk 'BEGIN{bun=0} (bun==1){ print ":"$1 ; bun=2;} /BUNDLED WITH/{bun=1}' Gemfile.lock)
