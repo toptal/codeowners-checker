@@ -2,6 +2,6 @@
 
 module Codeowners
   class Checker
-    VERSION = '1.0.3'
+    VERSION = '1.0.4'
   end
 end
