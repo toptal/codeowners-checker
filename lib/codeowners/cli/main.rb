@@ -4,6 +4,7 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative '../github_fetcher'
 require_relative 'suggest_file_from_pattern'
 require_relative '../checker/owner'
 
@@ -11,15 +12,15 @@ module Codeowners
   module Cli
     # Command Line Interface used by bin/codeowners-checker.
     class Main < Base # rubocop:disable Metrics/ClassLength
-      LABEL = { missing_ref: 'Missing references', useless_pattern: 'No files matching with the pattern' }.freeze
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
       option :interactive, default: true, type: :boolean, aliases: '-i'
+      option :validateowners, default: true, type: :boolean, aliases: '-v'
       option :autocommit, default: false, type: :boolean, aliases: '-c'
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
-        @codeowners_changed = false
+        @content_changed = false
         @repo = repo
         setup_checker
         if options[:interactive]
@@ -35,14 +36,34 @@ module Codeowners
       desc 'config', 'Checks config is consistent or configure it'
       subcommand 'config', Codeowners::Cli::Config
 
+      # interactive set to true as this may ask for organization/github token
+      option :interactive, default: true, type: :boolean, hide: true
+      desc 'fetch REPO', 'Fetches .github/OWNERS based on github organization'
+      def fetch(repo = '.')
+        @repo = repo
+        owners = owners_from_github
+        setup_checker
+        @checker.owners_list = owners
+        @checker.persist_owners_list!
+      end
+
       private
 
       def interactive_mode
         @checker.fix!
-        return unless @codeowners_changed
+        return unless @content_changed
 
-        write_codeowners
+        write_changes
         @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
+      end
+
+      def owners_from_github
+        organization = ENV['GITHUB_ORGANIZATION']
+        organization ||= ask('GitHub organization (e.g. github): ')
+        token = ENV['GITHUB_TOKEN']
+        token ||= ask('Enter GitHub token: ', echo: false)
+        puts 'Fetching owners list from GitHub ...'
+        Codeowners::GithubFetcher.get_owners(organization, token)
       end
 
       def report_inconsistencies
@@ -61,11 +82,14 @@ module Codeowners
         @checker = Codeowners::Checker.new(@repo, options[:from], to)
         @checker.when_useless_pattern = method(:suggest_fix_for)
         @checker.when_new_file = method(:suggest_add_to_codeowners)
+        @checker.when_new_owner = method(:suggest_add_to_owners_list)
         @checker.transformers << method(:unrecognized_line) if options[:interactive]
+        @checker.validate_owners = options[:validateowners]
       end
 
-      def write_codeowners
+      def write_changes
         @checker.codeowners.persist!
+        @checker.persist_owners_list! if options[:validateowners]
       end
 
       def suggest_add_to_codeowners(file)
@@ -91,12 +115,40 @@ module Codeowners
         subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
         add_pattern(new_line, subgroups)
 
-        @codeowners_changed = true
+        @content_changed = true
+      end
+
+      def suggest_add_to_owners_list(line, owner)
+        case add_to_ownerslist_dialog(line, owner)
+        when 'y' then add_to_ownerslist(owner)
+        when 'i' then nil
+        when 'q' then throw :user_quit
+        end
+      end
+
+      def add_to_ownerslist_dialog(line, owner)
+        ask(<<~QUESTION, limited_to: %w[y i q])
+          Unknown owner: #{owner} for pattern: #{line.pattern}. Add owner to the OWNERS file?
+          (y) yes
+          (i) ignore
+          (q) quit and save
+        QUESTION
+      end
+
+      def add_to_ownerslist(owner)
+        @checker.owners_list << owner
+        @content_changed = true
       end
 
       def create_new_pattern(file)
         sorted_owners = @checker.main_group.owners.sort
         list_owners(sorted_owners)
+        return create_new_pattern_with_validated_owner(file, sorted_owners) if @options[:validateowners]
+
+        create_new_pattern_with_owner(file, sorted_owners)
+      end
+
+      def create_new_pattern_with_owner(file, sorted_owners)
         loop do
           owner = new_owner(sorted_owners)
 
@@ -107,6 +159,20 @@ module Codeowners
 
           return Codeowners::Checker::Group::Pattern.new("#{file} #{owner}")
         end
+      end
+
+      def create_new_pattern_with_validated_owner(file, sorted_owners)
+        # first make sure we have the '@' sign in owner
+        pattern = create_new_pattern_with_owner(file, sorted_owners)
+        return pattern if @checker.valid_owner?(pattern.owner)
+
+        # The following call will either
+        #   - (i)gnore: the bad owner and thus the user intention is explicit and we will create the Pattern
+        #   - (y)es: user is added to OWNERS and thus the Pattern will be valid
+        # The side-effect of ignore is that the same validation and the same question will be asked again
+        # after the pattern validation finishes and the owners validation starts
+        suggest_add_to_owners_list(pattern, pattern.owner)
+        pattern
       end
 
       def list_owners(sorted_owners)
@@ -162,7 +228,7 @@ module Codeowners
           pattern_fix(line)
         end
 
-        @codeowners_changed = true
+        @content_changed = true
       end
 
       def apply_suggestion(line, suggestion)
@@ -237,7 +303,7 @@ module Codeowners
           line = Codeowners::Checker::Group::Line.build(new_line_string)
           break unless line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
         end
-        @codeowners_changed = true
+        @content_changed = true
         line
       end
 
@@ -255,7 +321,8 @@ module Codeowners
 
       LABELS = {
         missing_ref: 'No owner defined',
-        useless_pattern: 'Useless patterns'
+        useless_pattern: 'Useless patterns',
+        invalid_owner: 'Invalid owner'
       }.freeze
 
       def report_errors!

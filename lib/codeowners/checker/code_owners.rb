@@ -21,6 +21,7 @@ module Codeowners
 
       def persist!
         file_manager.content = main_group.to_file
+        file_manager.persist!
       end
 
       def main_group

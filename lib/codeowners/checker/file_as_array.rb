@@ -4,6 +4,8 @@ module Codeowners
   class Checker
     # Convert CODEOWNERS file content to an array.
     class FileAsArray
+      attr_writer :content
+
       def initialize(file)
         @file = file
         @target_dir, = File.split(@file)
@@ -18,9 +20,7 @@ module Codeowners
 
       # Save content to the @file
       # Creates the directory of the file if needed
-      def content=(content)
-        @content = content
-
+      def persist!
         Dir.mkdir(@target_dir) unless Dir.exist?(@target_dir)
 
         File.open(@file, 'w+') do |f|
