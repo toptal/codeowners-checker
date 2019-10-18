@@ -6,13 +6,16 @@ require 'logger'
 require_relative 'checker/code_owners'
 require_relative 'checker/file_as_array'
 require_relative 'checker/group'
+require_relative 'checker/owners_list'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.
   # It compares what's being changed in the PR and check if the current files and folders
   # are also being declared in the CODEOWNERS file.
+  # By default (:validate_owners property) it also reads OWNERS with list of all
+  # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
-    attr_accessor :when_useless_pattern, :when_new_file
+    attr_accessor :when_useless_pattern, :when_new_file, :owners_list
 
     # Get repo metadata and compare with the owners
     def initialize(repo, from, to)
@@ -20,6 +23,7 @@ module Codeowners
       @repo_dir = repo
       @from = from || 'HEAD'
       @to = to
+      @owners_list = OwnersList.new(@repo_dir)
     end
 
     def transformers
@@ -95,7 +99,7 @@ module Codeowners
 
     def codeowners
       @codeowners ||= CodeOwners.new(
-        FileAsArray.new(codeowners_filename),
+        FileAsArray.new(CodeOwners.filename(@repo_dir)),
         transformers: transformers
       )
     end
@@ -109,14 +113,9 @@ module Codeowners
     end
 
     def commit_changes!
-      @git.add(codeowners_filename)
+      @git.add(@codeowners.filename)
+      @git.add(@owners_list.filename)
       @git.commit('Fix pattern :robot:')
-    end
-
-    def codeowners_filename
-      directories = ['', '.github', 'docs', '.gitlab']
-      paths = directories.map { |dir| File.join(@repo_dir, dir, 'CODEOWNERS') }
-      Dir.glob(paths).first || paths.first
     end
 
     private
@@ -125,7 +124,8 @@ module Codeowners
       @results ||=
         {
           missing_ref: missing_reference,
-          useless_pattern: useless_pattern
+          useless_pattern: useless_pattern,
+          invalid_owner: @owners_list.invalid_owner(@codeowners)
         }
     end
   end

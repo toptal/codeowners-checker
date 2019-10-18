@@ -17,6 +17,35 @@ between two git revisions.
 
 It will configure `@owner` as the default owner in the config file.
 
+
+### Fetching and validating owners
+
+By default, [check](#check-file-consistency) command will validate owners either against the prepopulated file (OWNERS)
+or against data fetched from github.
+Format of OWNERS is one owner per line.
+
+Example OWNERS:
+```
+@company/backend-devs
+@company/frontend-devs
+@john.smith
+```
+GitHub credentials are taken from the following environment variables. You might want to put them into your .bashrc or equivalent:
+
+    $ export GITHUB_TOKEN='your GitHub PAT' # your personal access token from GitHub
+    $ export GITHUB_ORGANIZATION='company' # name of your GitHub organization
+
+You can generate your PAT in [Settings -> Developer settings -> Personal access tokens on GitHub](https://github.com/settings/tokens) and `read:org` scope is **required**.
+
+If you don't want to fetch the list from GitHub every-time you run codeowners-checker, you can fetch it and store in your repository
+alongside of CODEOWNERS. The following prompt will also ask for your GitHub PAT/organization in case it is not already in environment:
+
+    $  codeowners-checker fetch
+
+You can also turn off the validation using the following
+
+    $  codeowners-checker check --no-validateowners
+
 ### Check file consistency
 
 To check if your CODEOWNERS file is consistent with your current project you can run

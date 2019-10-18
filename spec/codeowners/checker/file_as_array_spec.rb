@@ -56,6 +56,7 @@ RSpec.describe Codeowners::Checker::FileAsArray do
 
       it 'over-writes the file with content' do
         subject.content = lines
+        subject.persist!
         expect(File.read(file_path)).to eq(content)
       end
     end
@@ -64,6 +65,7 @@ RSpec.describe Codeowners::Checker::FileAsArray do
       it 'creates the file with content' do
         expect do
           subject.content = lines
+          subject.persist!
         end.to change { File.exist?(file_path) }.from(false).to(true)
 
         expect(File.read(file_path)).to eq(content)
