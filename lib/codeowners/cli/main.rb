@@ -4,6 +4,7 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative 'owners_list_handler'
 require_relative '../github_fetcher'
 require_relative 'suggest_file_from_pattern'
 require_relative '../checker/owner'
@@ -23,6 +24,8 @@ module Codeowners
         @content_changed = false
         @repo = repo
         setup_checker
+        @owners_list_handler = OwnersListHandler.new
+        @owners_list_handler.checker = @checker
         if options[:interactive]
           interactive_mode
         else
@@ -36,34 +39,20 @@ module Codeowners
       desc 'config', 'Checks config is consistent or configure it'
       subcommand 'config', Codeowners::Cli::Config
 
+      # TODO: OWNERS specific
       # interactive set to true as this may ask for organization/github token
       option :interactive, default: true, type: :boolean, hide: true
       desc 'fetch REPO', 'Fetches .github/OWNERS based on github organization'
-      def fetch(repo = '.')
-        @repo = repo
-        owners = owners_from_github
-        setup_checker
-        @checker.owners_list = owners
-        @checker.persist_owners_list!
-      end
+      subcommand 'fetch', Codeowners::Cli::OwnersListHandler
 
       private
 
       def interactive_mode
         @checker.fix!
-        return unless @content_changed
+        return unless content_changed
 
         write_changes
         @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
-      end
-
-      def owners_from_github
-        organization = ENV['GITHUB_ORGANIZATION']
-        organization ||= ask('GitHub organization (e.g. github): ')
-        token = ENV['GITHUB_TOKEN']
-        token ||= ask('Enter GitHub token: ', echo: false)
-        puts 'Fetching owners list from GitHub ...'
-        Codeowners::GithubFetcher.get_owners(organization, token)
       end
 
       def report_inconsistencies
@@ -82,14 +71,22 @@ module Codeowners
         @checker = Codeowners::Checker.new(@repo, options[:from], to)
         @checker.when_useless_pattern = method(:suggest_fix_for)
         @checker.when_new_file = method(:suggest_add_to_codeowners)
-        @checker.when_new_owner = method(:suggest_add_to_owners_list)
         @checker.transformers << method(:unrecognized_line) if options[:interactive]
-        @checker.validate_owners = options[:validateowners]
+        @checker.owners_list.when_new_owner = method(:suggest_add_to_owners_list)
+        @checker.owners_list.validate_owners = options[:validateowners]
+      end
+
+      def suggest_add_to_owners_list(file, owner)
+        @owners_list_handler.suggest_add_to_owners_list(file, owner)
       end
 
       def write_changes
         @checker.codeowners.persist!
-        @checker.persist_owners_list! if options[:validateowners]
+        @checker.owners_list.persist!
+      end
+
+      def content_changed
+        @content_changed || @owners_list_handler.content_changed
       end
 
       def suggest_add_to_codeowners(file)
@@ -118,79 +115,20 @@ module Codeowners
         @content_changed = true
       end
 
-      def suggest_add_to_owners_list(line, owner)
-        case add_to_ownerslist_dialog(line, owner)
-        when 'y' then add_to_ownerslist(owner)
-        when 'i' then nil
-        when 'q' then throw :user_quit
-        end
-      end
-
-      def add_to_ownerslist_dialog(line, owner)
-        ask(<<~QUESTION, limited_to: %w[y i q])
-          Unknown owner: #{owner} for pattern: #{line.pattern}. Add owner to the OWNERS file?
-          (y) yes
-          (i) ignore
-          (q) quit and save
-        QUESTION
-      end
-
-      def add_to_ownerslist(owner)
-        @checker.owners_list << owner
-        @content_changed = true
-      end
-
-      def create_new_pattern(file)
-        sorted_owners = @checker.main_group.owners.sort
-        list_owners(sorted_owners)
-        return create_new_pattern_with_validated_owner(file, sorted_owners) if @options[:validateowners]
-
-        create_new_pattern_with_owner(file, sorted_owners)
-      end
-
-      def create_new_pattern_with_owner(file, sorted_owners)
-        loop do
-          owner = new_owner(sorted_owners)
-
-          unless Codeowners::Checker::Owner.valid?(owner)
-            puts "#{owner.inspect} is not a valid owner name. Try again."
-            next
-          end
-
-          return Codeowners::Checker::Group::Pattern.new("#{file} #{owner}")
-        end
-      end
-
-      def create_new_pattern_with_validated_owner(file, sorted_owners)
-        # first make sure we have the '@' sign in owner
-        pattern = create_new_pattern_with_owner(file, sorted_owners)
-        return pattern if @checker.valid_owner?(pattern.owner)
-
-        # The following call will either
-        #   - (i)gnore: the bad owner and thus the user intention is explicit and we will create the Pattern
-        #   - (y)es: user is added to OWNERS and thus the Pattern will be valid
-        # The side-effect of ignore is that the same validation and the same question will be asked again
-        # after the pattern validation finishes and the owners validation starts
-        suggest_add_to_owners_list(pattern, pattern.owner)
-        pattern
-      end
-
       def list_owners(sorted_owners)
         puts 'Owners:'
         sorted_owners.each_with_index { |owner, i| puts "#{i + 1} - #{owner}" }
         puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
       end
 
-      def new_owner(sorted_owners)
-        owner = ask('New owner: ')
-
-        if owner.to_i.between?(1, sorted_owners.length)
-          sorted_owners[owner.to_i - 1]
-        elsif owner.empty?
-          @config.default_owner
-        else
-          owner
+      def create_new_pattern(file)
+        sorted_owners = @checker.main_group.owners.sort
+        list_owners(sorted_owners)
+        if @options[:validateowners]
+          return @owners_list_handler.create_new_pattern_with_validated_owner(file, sorted_owners)
         end
+
+        @owners_list_handler.create_new_pattern_with_owner(file, sorted_owners)
       end
 
       def add_pattern(pattern, subgroups)

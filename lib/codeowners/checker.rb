@@ -6,6 +6,7 @@ require 'logger'
 require_relative 'checker/code_owners'
 require_relative 'checker/file_as_array'
 require_relative 'checker/group'
+require_relative 'checker/owners_list'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.
@@ -14,8 +15,7 @@ module Codeowners
   # By default (:validate_owners property) it also reads OWNERS with list of all
   # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
-    attr_accessor :when_useless_pattern, :when_new_file, :when_new_owner, :validate_owners
-    attr_writer :owners_list
+    attr_accessor :when_useless_pattern, :when_new_file, :owners_list
 
     # Get repo metadata and compare with the owners
     def initialize(repo, from, to)
@@ -23,7 +23,7 @@ module Codeowners
       @repo_dir = repo
       @from = from || 'HEAD'
       @to = to
-      @validate_owners = true
+      @owners_list = OwnersList.new(ownerslist_filename)
     end
 
     def transformers
@@ -78,18 +78,6 @@ module Codeowners
       end
     end
 
-    def invalid_owner
-      return [] unless @validate_owners
-
-      codeowners.select do |line|
-        next unless line.pattern?
-
-        missing = line.owners - owners_list
-        missing.each { |owner| @when_new_owner&.call(line, owner) }
-        missing.any?
-      end
-    end
-
     def missing_reference
       added_files.reject(&method(:defined_owner?))
     end
@@ -109,32 +97,11 @@ module Codeowners
       false
     end
 
-    def valid_owner?(owner)
-      !@validate_owners || owners_list.include?(owner)
-    end
-
     def codeowners
       @codeowners ||= CodeOwners.new(
         FileAsArray.new(codeowners_filename),
         transformers: transformers
       )
-    end
-
-    def owners_list
-      return [] unless @validate_owners
-
-      @owners_list ||=
-        if github_credentials_exist?
-          Codeowners::GithubFetcher.get_owners(ENV['GITHUB_ORGANIZATION'], ENV['GITHUB_TOKEN'])
-        else
-          FileAsArray.new(ownerslist_filename).content
-        end
-    end
-
-    def persist_owners_list!
-      owners_file = FileAsArray.new(ownerslist_filename)
-      owners_file.content = @owners_list
-      owners_file.persist!
     end
 
     def main_group
@@ -151,21 +118,23 @@ module Codeowners
       @git.commit('Fix pattern :robot:')
     end
 
-    def ownerslist_filename
+    def self.ownerslist_filename(repo_dir)
       # doing gsub here ensures the files are always in the same directory
-      codeowners_filename.gsub('CODEOWNERS', 'OWNERS')
+      codeowners_filename(repo_dir).gsub('CODEOWNERS', 'OWNERS')
+    end
+
+    def ownerslist_filename
+      self.class.ownerslist_filename(@repo_dir)
     end
 
     def codeowners_filename
-      directories = ['', '.github', 'docs', '.gitlab']
-      paths = directories.map { |dir| File.join(@repo_dir, dir, 'CODEOWNERS') }
-      Dir.glob(paths).first || paths.first
+      self.class.codeowners_filename(@repo_dir)
     end
 
-    def github_credentials_exist?
-      token = ENV['GITHUB_TOKEN']
-      organization = ENV['GITHUB_ORGANIZATION']
-      token && organization
+    def self.codeowners_filename(repo_dir)
+      directories = ['', '.github', 'docs', '.gitlab']
+      paths = directories.map { |dir| File.join(repo_dir, dir, 'CODEOWNERS') }
+      Dir.glob(paths).first || paths.first
     end
 
     private
@@ -175,7 +144,7 @@ module Codeowners
         {
           missing_ref: missing_reference,
           useless_pattern: useless_pattern,
-          invalid_owner: invalid_owner
+          invalid_owner: @owners_list.invalid_owner(@codeowners)
         }
     end
   end

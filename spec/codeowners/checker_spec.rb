@@ -180,7 +180,7 @@ RSpec.describe Codeowners::Checker do
       subject { described_class.new folder_name, from, to }
 
       before do
-        subject.validate_owners = false
+        subject.owners_list.validate_owners = false
       end
 
       it 'does not complain' do
@@ -339,50 +339,6 @@ RSpec.describe Codeowners::Checker do
          'lib/shared/* @owner2 @owner1']
       )
       expect(subject.main_group).to be_a(Codeowners::Checker::Group)
-    end
-  end
-
-  describe '#valid_owner?' do
-    subject { described_class.new folder_name, from, to }
-
-    before do
-      subject.owners_list
-    end
-
-    context 'when load OWNERS' do
-      it 'validates owner from file' do
-        expect(subject).to be_valid_owner('@owner1')
-        expect(subject).not_to be_valid_owner('@unknown')
-      end
-    end
-
-    context 'when skip owner validation' do
-      before do
-        subject.validate_owners = false
-      end
-
-      it 'returns true' do
-        expect(subject).to be_valid_owner('@unknown')
-      end
-    end
-  end
-
-  describe '#persist_owners_list!' do
-    subject { described_class.new folder_name, from, to }
-
-    before do
-      subject.owners_list = []
-    end
-
-    context 'when new user is added to owners_list' do
-      before do
-        subject.owners_list << '@new_owner'
-        subject.persist_owners_list!
-      end
-
-      it 'writes the user to OWNERS' do
-        expect(File.read(subject.ownerslist_filename)).to eq("@new_owner\n")
-      end
     end
   end
 end
