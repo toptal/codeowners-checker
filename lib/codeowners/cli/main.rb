@@ -4,6 +4,8 @@ require_relative '../checker'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative 'owners_list_handler'
+require_relative '../github_fetcher'
 require_relative 'suggest_file_from_pattern'
 require_relative '../checker/owner'
 
@@ -11,17 +13,19 @@ module Codeowners
   module Cli
     # Command Line Interface used by bin/codeowners-checker.
     class Main < Base # rubocop:disable Metrics/ClassLength
-      LABEL = { missing_ref: 'Missing references', useless_pattern: 'No files matching with the pattern' }.freeze
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
       option :interactive, default: true, type: :boolean, aliases: '-i'
+      option :validateowners, default: true, type: :boolean, aliases: '-v'
       option :autocommit, default: false, type: :boolean, aliases: '-c'
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
-        @codeowners_changed = false
+        @content_changed = false
         @repo = repo
         setup_checker
+        @owners_list_handler = OwnersListHandler.new
+        @owners_list_handler.checker = @checker
         if options[:interactive]
           interactive_mode
         else
@@ -35,13 +39,16 @@ module Codeowners
       desc 'config', 'Checks config is consistent or configure it'
       subcommand 'config', Codeowners::Cli::Config
 
+      desc 'fetch [REPO]', 'Fetches .github/OWNERS based on github organization'
+      subcommand 'fetch', Codeowners::Cli::OwnersListHandler
+
       private
 
       def interactive_mode
         @checker.fix!
-        return unless @codeowners_changed
+        return unless content_changed
 
-        write_codeowners
+        write_changes
         @checker.commit_changes! if options[:autocommit] || yes?('Commit changes?')
       end
 
@@ -50,7 +57,7 @@ module Codeowners
           puts '✅ File is consistent'
           exit 0
         else
-          puts "File #{@checker.codeowners_filename} is inconsistent:"
+          puts "File #{@checker.codeowners.filename} is inconsistent:"
           report_errors!
           exit(-1)
         end
@@ -62,10 +69,21 @@ module Codeowners
         @checker.when_useless_pattern = method(:suggest_fix_for)
         @checker.when_new_file = method(:suggest_add_to_codeowners)
         @checker.transformers << method(:unrecognized_line) if options[:interactive]
+        @checker.owners_list.when_new_owner = method(:suggest_add_to_owners_list)
+        @checker.owners_list.validate_owners = options[:validateowners]
       end
 
-      def write_codeowners
+      def suggest_add_to_owners_list(file, owner)
+        @owners_list_handler.suggest_add_to_owners_list(file, owner)
+      end
+
+      def write_changes
         @checker.codeowners.persist!
+        @checker.owners_list.persist!
+      end
+
+      def content_changed
+        @content_changed || @owners_list_handler.content_changed
       end
 
       def suggest_add_to_codeowners(file)
@@ -91,22 +109,7 @@ module Codeowners
         subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
         add_pattern(new_line, subgroups)
 
-        @codeowners_changed = true
-      end
-
-      def create_new_pattern(file)
-        sorted_owners = @checker.main_group.owners.sort
-        list_owners(sorted_owners)
-        loop do
-          owner = new_owner(sorted_owners)
-
-          unless Codeowners::Checker::Owner.valid?(owner)
-            puts "#{owner.inspect} is not a valid owner name. Try again."
-            next
-          end
-
-          return Codeowners::Checker::Group::Pattern.new("#{file} #{owner}")
-        end
+        @content_changed = true
       end
 
       def list_owners(sorted_owners)
@@ -115,16 +118,14 @@ module Codeowners
         puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
       end
 
-      def new_owner(sorted_owners)
-        owner = ask('New owner: ')
-
-        if owner.to_i.between?(1, sorted_owners.length)
-          sorted_owners[owner.to_i - 1]
-        elsif owner.empty?
-          @config.default_owner
-        else
-          owner
+      def create_new_pattern(file)
+        sorted_owners = @checker.main_group.owners.sort
+        list_owners(sorted_owners)
+        if @options[:validateowners]
+          return @owners_list_handler.create_new_pattern_with_validated_owner(file, sorted_owners)
         end
+
+        @owners_list_handler.create_new_pattern_with_owner(file, sorted_owners)
       end
 
       def add_pattern(pattern, subgroups)
@@ -162,7 +163,7 @@ module Codeowners
           pattern_fix(line)
         end
 
-        @codeowners_changed = true
+        @content_changed = true
       end
 
       def apply_suggestion(line, suggestion)
@@ -237,7 +238,7 @@ module Codeowners
           line = Codeowners::Checker::Group::Line.build(new_line_string)
           break unless line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
         end
-        @codeowners_changed = true
+        @content_changed = true
         line
       end
 
@@ -255,7 +256,8 @@ module Codeowners
 
       LABELS = {
         missing_ref: 'No owner defined',
-        useless_pattern: 'Useless patterns'
+        useless_pattern: 'Useless patterns',
+        invalid_owner: 'Invalid owner'
       }.freeze
 
       def report_errors!

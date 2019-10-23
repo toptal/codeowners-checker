@@ -11,9 +11,13 @@ RSpec.describe Codeowners::Checker do
   let(:to) { 'HEAD' }
   let(:git) { Git.open(folder_name, log: Logger.new(STDOUT)) }
 
+  ENV['GITHUB_TOKEN'] = nil
+  ENV['GITHUB_ORGANIZATION'] = nil
+
   def setup_project_folder
     on_project_folder do
       setup_code_owners
+      setup_owners_list
       setup_billing_domain
       setup_shared_domain
       setup_gemfile
@@ -37,6 +41,16 @@ RSpec.describe Codeowners::Checker do
         Gemfile @owner1
         lib/billing/* @owner2
         lib/shared/* @owner2 @owner1
+      CONTENT
+    end
+  end
+
+  def setup_owners_list
+    File.open('.github/OWNERS', 'w+') do |file|
+      file.puts <<~CONTENT
+        @owner
+        @owner1
+        @owner2
       CONTENT
     end
   end
@@ -98,7 +112,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   context 'without any changes it should not complain' do
-    it { is_expected.to eq(missing_ref: [], useless_pattern: []) }
+    it { is_expected.to eq(missing_ref: [], useless_pattern: [], invalid_owner: []) }
   end
 
   context 'when introducing a new file in the git tree' do
@@ -117,7 +131,7 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       it 'fails if the file is not referenced in .github/CODEOWNERS' do
-        expect(subject).to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [])
+        expect(subject).to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [], invalid_owner: [])
       end
     end
 
@@ -130,6 +144,7 @@ RSpec.describe Codeowners::Checker do
           File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
           File.open(filename2, 'w+') { |file| file.puts '# add some ruby code here' }
           File.open('.github/CODEOWNERS', 'a+') { |f| f.puts '**.js @owner3' }
+          File.open('.github/OWNERS', 'a+') { |f| f.puts '@owner3' }
 
           git.add filename
           git.add filename2
@@ -140,7 +155,36 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       it 'does not list the files as missing reference' do
-        expect(subject).to eq(missing_ref: [], useless_pattern: [])
+        expect(subject).to eq(missing_ref: [], useless_pattern: [], invalid_owner: [])
+      end
+    end
+  end
+
+  context 'when unknown owner is added to CODEOWNERS' do
+    before do
+      on_project_folder do
+        filename = 'lib/another_new_file.rb'
+        File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
+        File.open('.github/CODEOWNERS', 'a+') { |f| f.puts "#{filename} @toptal/owner4 @owner5" }
+
+        git.add filename
+        git.commit('New files')
+      end
+    end
+
+    it 'complains about invalid owner' do
+      expect(subject[:invalid_owner].first.owner).to eq('@toptal/owner4')
+    end
+
+    context 'when no-validateowners is used' do
+      subject { described_class.new folder_name, from, to }
+
+      before do
+        subject.owners_list.validate_owners = false
+      end
+
+      it 'does not complain' do
+        expect(subject.fix!).to eq(missing_ref: [], useless_pattern: [], invalid_owner: [])
       end
     end
   end
@@ -185,7 +229,7 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'does not complain' do
-      expect(subject).to eq(missing_ref: [], useless_pattern: [])
+      expect(subject).to eq(missing_ref: [], useless_pattern: [], invalid_owner: [])
     end
   end
 

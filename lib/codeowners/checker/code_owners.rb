@@ -21,6 +21,7 @@ module Codeowners
 
       def persist!
         file_manager.content = main_group.to_file
+        file_manager.persist!
       end
 
       def main_group
@@ -33,6 +34,16 @@ module Codeowners
 
       def to_content
         main_group.to_content
+      end
+
+      def self.filename(repo_dir)
+        directories = ['', '.github', 'docs', '.gitlab']
+        paths = directories.map { |dir| File.join(repo_dir, dir, 'CODEOWNERS') }
+        Dir.glob(paths).first || paths.first
+      end
+
+      def filename
+        @file_manager.filename
       end
 
       private
