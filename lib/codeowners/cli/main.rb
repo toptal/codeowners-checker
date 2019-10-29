@@ -257,7 +257,8 @@ module Codeowners
       LABELS = {
         missing_ref: 'No owner defined',
         useless_pattern: 'Useless patterns',
-        invalid_owner: 'Invalid owner'
+        invalid_owner: 'Invalid owner',
+        unrecognized_line: 'Unrecognized line'
       }.freeze
 
       def report_errors!
