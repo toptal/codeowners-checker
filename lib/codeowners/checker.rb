@@ -118,6 +118,12 @@ module Codeowners
       @git.commit('Fix pattern :robot:')
     end
 
+    def unrecognized_line
+      codeowners.map do |line|
+        line.to_file if line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
+      end.compact
+    end
+
     private
 
     def results
@@ -125,7 +131,8 @@ module Codeowners
         {
           missing_ref: missing_reference,
           useless_pattern: useless_pattern,
-          invalid_owner: @owners_list.invalid_owner(@codeowners)
+          invalid_owner: @owners_list.invalid_owner(@codeowners),
+          unrecognized_line: unrecognized_line
         }
     end
   end

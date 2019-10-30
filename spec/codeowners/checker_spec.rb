@@ -112,7 +112,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   context 'without any changes it should not complain' do
-    it { is_expected.to eq(missing_ref: [], useless_pattern: [], invalid_owner: []) }
+    it { is_expected.to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: []) }
   end
 
   context 'when introducing a new file in the git tree' do
@@ -131,7 +131,10 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       it 'fails if the file is not referenced in .github/CODEOWNERS' do
-        expect(subject).to eq(missing_ref: ['lib/new_file.rb'], useless_pattern: [], invalid_owner: [])
+        expect(subject).to eq(missing_ref: ['lib/new_file.rb'],
+                              useless_pattern: [],
+                              unrecognized_line: [],
+                              invalid_owner: [])
       end
     end
 
@@ -155,7 +158,7 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       it 'does not list the files as missing reference' do
-        expect(subject).to eq(missing_ref: [], useless_pattern: [], invalid_owner: [])
+        expect(subject).to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: [])
       end
     end
   end
@@ -184,7 +187,7 @@ RSpec.describe Codeowners::Checker do
       end
 
       it 'does not complain' do
-        expect(subject.fix!).to eq(missing_ref: [], useless_pattern: [], invalid_owner: [])
+        expect(subject.fix!).to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: [])
       end
     end
   end
@@ -229,7 +232,27 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'does not complain' do
-      expect(subject).to eq(missing_ref: [], useless_pattern: [], invalid_owner: [])
+      expect(subject).to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: [])
+    end
+  end
+
+  context 'when adding unrecognized line' do
+    before do
+      on_project_folder do
+        filename = 'lib/shared/random.rb'
+        File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
+        File.open('.github/CODEOWNERS', 'a+') { |f| f.puts filename }
+
+        git.add filename
+        git.commit('New files')
+      end
+    end
+
+    it 'complains about unrecognized line' do
+      expect(subject).to eq(missing_ref: [],
+                            useless_pattern: [],
+                            unrecognized_line: ['lib/shared/random.rb'],
+                            invalid_owner: [])
     end
   end
 
