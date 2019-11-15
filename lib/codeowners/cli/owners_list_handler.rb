@@ -2,11 +2,15 @@
 
 require_relative '../checker'
 require_relative '../checker/owners_list'
+require_relative 'interactive_helpers'
 
 module Codeowners
   module Cli
     # Command Line Interface dealing with OWNERS generation and validation
     class OwnersListHandler < Base
+      include InteractiveHelpers
+
+      attr_accessor :options
       attr_writer :checker
       attr_reader :content_changed
       default_task :fetch
