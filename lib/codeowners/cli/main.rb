@@ -14,7 +14,7 @@ module Codeowners
     # Command Line Interface used by bin/codeowners-checker.
     class Main < Base # rubocop:disable Metrics/ClassLength
       include InteractiveHelpers
-      
+
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
       option :interactive, default: true, type: :boolean, aliases: '-i'
@@ -22,13 +22,13 @@ module Codeowners
       option :autocommit, default: false, type: :boolean, aliases: '-c'
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
-      def check(repo = '.')
+      def check(repo = '.') # rubocop:disable Metrics/MethodLength
         @content_changed = false
         @repo = repo
         setup_checker
         @owners_list_handler = OwnersListHandler.new
         @owners_list_handler.checker = @checker
-        @owners_list_handler.options = @options
+        @owners_list_handler.options = options
         if options[:interactive]
           interactive_mode
         else
@@ -98,7 +98,7 @@ module Codeowners
       end
 
       def add_to_codeowners_dialog(file)
-          ask(<<~QUESTION, limited_to: %w[y i q])
+        ask(<<~QUESTION, limited_to: %w[y i q])
           File added: #{file.inspect}. Add owner to the CODEOWNERS file?
           (y) yes
           (i) ignore
@@ -180,7 +180,7 @@ module Codeowners
       end
 
       def make_suggestion(suggestion)
-         ask(<<~QUESTION, limited_to: %w[y i e d q])
+        ask(<<~QUESTION, limited_to: %w[y i e d q])
           Replace with: #{suggestion.inspect}?
           (y) yes
           (i) ignore
@@ -200,7 +200,7 @@ module Codeowners
       end
 
       def pattern_suggest_fixing
-         ask(<<~QUESTION, limited_to: %w[i e d q])
+        ask(<<~QUESTION, limited_to: %w[i e d q])
           (e) edit the pattern
           (d) delete the pattern
           (i) ignore
@@ -226,7 +226,7 @@ module Codeowners
       end
 
       def unrecognized_line_suggest_fixing(line)
-         ask(<<~QUESTION, limited_to: %w[y i d])
+        ask(<<~QUESTION, limited_to: %w[y i d])
           #{line.to_s.inspect} is in unrecognized format. Would you like to edit?
           (y) yes
           (i) ignore
@@ -237,7 +237,7 @@ module Codeowners
       def unrecognized_line_new_line
         line = nil
         loop do
-          new_line_string =  ask('New line: ')
+          new_line_string = ask('New line: ')
           line = Codeowners::Checker::Group::Line.build(new_line_string)
           break unless line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
         end
