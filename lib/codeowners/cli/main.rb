@@ -209,7 +209,7 @@ module Codeowners
       end
 
       def pattern_change(line)
-        new_pattern =  ask("Replace pattern #{line.pattern.inspect} with: ")
+        new_pattern = ask("Replace pattern #{line.pattern.inspect} with: ")
         return if new_pattern.empty?
 
         line.pattern = new_pattern
