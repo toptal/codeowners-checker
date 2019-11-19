@@ -26,9 +26,9 @@ module Codeowners
         @content_changed = false
         @repo = repo
         setup_checker
-        @owners_list_handler = OwnersListHandler.new
+        @owners_list_handler = OwnersListHandler.new(args, options)
         @owners_list_handler.checker = @checker
-        @owners_list_handler.options = options
+
         if options[:interactive]
           interactive_mode
         else

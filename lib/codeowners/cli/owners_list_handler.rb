@@ -10,7 +10,6 @@ module Codeowners
     class OwnersListHandler < Base
       include InteractiveHelpers
 
-      attr_accessor :options
       attr_writer :checker
       attr_reader :content_changed
       default_task :fetch
