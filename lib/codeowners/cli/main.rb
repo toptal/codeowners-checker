@@ -12,7 +12,7 @@ require_relative '../checker/owner'
 module Codeowners
   module Cli
     # Command Line Interface used by bin/codeowners-checker.
-    class Main < Base # rubocop:disable Metrics/ClassLength
+    class Main < Base
       include InteractiveHelpers
 
       option :from, default: 'origin/master'
@@ -22,7 +22,7 @@ module Codeowners
       option :autocommit, default: false, type: :boolean, aliases: '-c'
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
-      def check(repo = '.') # rubocop:disable Metrics/MethodLength
+      def check(repo = '.')
         @content_changed = false
         @repo = repo
         setup_checker
