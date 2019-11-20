@@ -5,6 +5,7 @@ require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
 require_relative 'owners_list_handler'
+require_relative 'interactive_fix'
 require_relative '../github_fetcher'
 require_relative 'suggest_file_from_pattern'
 require_relative '../checker/owner'
@@ -14,6 +15,8 @@ module Codeowners
     # Command Line Interface used by bin/codeowners-checker.
     class Main < Base
       include InteractiveHelpers
+
+      attr_reader :checker, :owners_list_handler
 
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
@@ -25,9 +28,9 @@ module Codeowners
       def check(repo = '.')
         @content_changed = false
         @repo = repo
+
         setup_checker
-        @owners_list_handler = OwnersListHandler.new(args, options)
-        @owners_list_handler.checker = @checker
+        setup_handlers
 
         if options[:interactive]
           interactive_mode
@@ -76,6 +79,14 @@ module Codeowners
         @checker.owners_list.validate_owners = options[:validateowners]
       end
 
+      def setup_handlers
+        @owners_list_handler = OwnersListHandler.new(args, options)
+        @owners_list_handler.checker = @checker
+
+        @interactive_fix = InteractiveFix.new
+        @interactive_fix.main_handler = self
+      end
+
       def suggest_add_to_owners_list(file, owner)
         @owners_list_handler.suggest_add_to_owners_list(file, owner)
       end
@@ -86,71 +97,13 @@ module Codeowners
       end
 
       def content_changed
-        @content_changed || @owners_list_handler.content_changed
+        @content_changed ||
+          @owners_list_handler.content_changed ||
+          @interactive_fix.content_changed
       end
 
       def suggest_add_to_codeowners(file)
-        case add_to_codeowners_dialog(file)
-        when 'y' then add_to_codeowners(file)
-        when 'i' then nil
-        when 'q' then throw :user_quit
-        end
-      end
-
-      def add_to_codeowners_dialog(file)
-        ask(<<~QUESTION, limited_to: %w[y i q])
-          File added: #{file.inspect}. Add owner to the CODEOWNERS file?
-          (y) yes
-          (i) ignore
-          (q) quit and save
-        QUESTION
-      end
-
-      def add_to_codeowners(file)
-        new_line = create_new_pattern(file)
-
-        subgroups = @checker.main_group.subgroups_owned_by(new_line.owner)
-        add_pattern(new_line, subgroups)
-
-        @content_changed = true
-      end
-
-      def list_owners(sorted_owners)
-        puts 'Owners:'
-        sorted_owners.each_with_index { |owner, i| puts "#{i + 1} - #{owner}" }
-        puts "Choose owner, add new one or leave empty to use #{@config.default_owner.inspect}."
-      end
-
-      def create_new_pattern(file)
-        sorted_owners = @checker.main_group.owners.sort
-        list_owners(sorted_owners)
-        if @options[:validateowners]
-          return @owners_list_handler.create_new_pattern_with_validated_owner(file, sorted_owners)
-        end
-
-        @owners_list_handler.create_new_pattern_with_owner(file, sorted_owners)
-      end
-
-      def add_pattern(pattern, subgroups)
-        unless subgroups.empty?
-          return if insert_pattern_into_subgroup(pattern, subgroups)
-        end
-
-        @checker.main_group.add(pattern) if yes?('Add to the end of the CODEOWNERS file?')
-      end
-
-      def insert_pattern_into_subgroup(pattern, subgroups)
-        subgroup = suggest_subgroups_for_pattern(subgroups).to_i - 1
-        return unless subgroup >= 0 && subgroup < subgroups.length
-
-        subgroups[subgroup].insert(pattern)
-        true
-      end
-
-      def suggest_subgroups_for_pattern(subgroups)
-        puts 'Possible groups to which the pattern belongs: '
-        subgroups.each_with_index { |group, i| puts "#{i + 1} - #{group.title}" }
-        ask('Choose group: ')
+        @interactive_fix.suggest_add_to_codeowners(file)
       end
 
       def suggest_fix_for(line)
@@ -244,6 +197,7 @@ module Codeowners
         @content_changed = true
         line
       end
+
       LABELS = {
         missing_ref: 'No owner defined',
         useless_pattern: 'Useless patterns',

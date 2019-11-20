@@ -9,6 +9,7 @@ require 'bundler/setup'
 require 'codeowners/cli/main'
 
 Dir['lib/**/*.rb'].each { |file| require file[4..-1] }
+Dir['./spec/support/**/*.rb'].each { |f| require f }
 
 RSpec.configure do |config|
   # Enable flags like --only-failures and --next-failure
