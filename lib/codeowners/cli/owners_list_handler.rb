@@ -8,7 +8,7 @@ module Codeowners
     # Command Line Interface dealing with OWNERS generation and validation
     class OwnersListHandler < Base
       attr_writer :checker
-      attr_reader :content_changed
+      attr_reader :content_changed, :ignored_owners
       default_task :fetch
 
       desc 'fetch [REPO]', 'Fetches .github/OWNERS based on github organization'
@@ -21,6 +21,11 @@ module Codeowners
       end
 
       no_commands do
+        def initialize
+          super
+          @ignored_owners = []
+        end
+
         def owners_from_github
           organization = ENV['GITHUB_ORGANIZATION']
           organization ||= ask('GitHub organization (e.g. github): ')
@@ -31,9 +36,13 @@ module Codeowners
         end
 
         def suggest_add_to_owners_list(line, owner)
+          return nil if @ignored_owners.include?(owner)
+
           case add_to_ownerslist_dialog(line, owner)
           when 'y' then add_to_ownerslist(owner)
-          when 'i' then nil
+          when 'i'
+            @ignored_owners << owner
+            nil
           when 'q' then throw :user_quit
           end
         end
@@ -42,7 +51,7 @@ module Codeowners
           ask(<<~QUESTION, limited_to: %w[y i q])
             Unknown owner: #{owner} for pattern: #{line.pattern}. Add owner to the OWNERS file?
             (y) yes
-            (i) ignore
+            (i) ignore owner in this session
             (q) quit and save
           QUESTION
         end
