@@ -12,7 +12,9 @@ require_relative '../checker/owner'
 module Codeowners
   module Cli
     # Command Line Interface used by bin/codeowners-checker.
-    class Main < Base # rubocop:disable Metrics/ClassLength
+    class Main < Base
+      include InteractiveHelpers
+
       option :from, default: 'origin/master'
       option :to, default: 'HEAD'
       option :interactive, default: true, type: :boolean, aliases: '-i'
@@ -24,8 +26,9 @@ module Codeowners
         @content_changed = false
         @repo = repo
         setup_checker
-        @owners_list_handler = OwnersListHandler.new
+        @owners_list_handler = OwnersListHandler.new(args, options)
         @owners_list_handler.checker = @checker
+
         if options[:interactive]
           interactive_mode
         else
@@ -241,19 +244,6 @@ module Codeowners
         @content_changed = true
         line
       end
-
-      def ask(message, *opts)
-        return unless options[:interactive]
-
-        super
-      end
-
-      def yes?(message, *opts)
-        return unless options[:interactive]
-
-        super
-      end
-
       LABELS = {
         missing_ref: 'No owner defined',
         useless_pattern: 'Useless patterns',
