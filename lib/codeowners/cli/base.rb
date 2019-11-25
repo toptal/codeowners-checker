@@ -29,18 +29,6 @@ module Codeowners
         help
         $stdout = save_stdout
       end
-
-      def ask(message, *opts)
-        return unless options[:interactive]
-
-        super
-      end
-
-      def yes?(message, *opts)
-        return unless options[:interactive]
-
-        super
-      end
     end
   end
 end
