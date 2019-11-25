@@ -90,4 +90,113 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
       end
     end
   end
+
+  describe '#suggest_add_to_owners_list' do
+    let(:new_file) { 'text.rb' }
+    let(:the_owner) { '@owner1' }
+    let(:another_owner1) { '@owner2' }
+    let(:another_owner2) { '@owner3' }
+    let(:line_str) { "#{new_file} #{the_owner}" }
+    let(:line) { Codeowners::Checker::Group::Line.build(line_str) }
+    let(:suggestion) { <<~QUESTION }
+      Unknown owner: #{the_owner} for pattern: #{new_file}. Add owner to the OWNERS file?
+      (y) yes
+      (i) ignore owner in this session
+      (q) quit and save
+    QUESTION
+    let(:suggestion_options) { %w[y i q] }
+    let(:owners_list) { instance_double(::Array, 'owners_list') }
+    let(:checker) { instance_double(Codeowners::Checker, 'checker') }
+
+    before do
+      allow(owners_list).to receive(:<<)
+      allow(checker).to receive(:owners_list).and_return(owners_list)
+    end
+
+    # rubocop:disable Metrics/AbcSize
+    # rubocop:disable Metrics/MethodLength
+    def self.test_with_non_ignored_owner
+      it 'suggest owner addition' do
+        allow(owners_list_handler).to receive(:ask)
+
+        owners_list_handler.suggest_add_to_owners_list(line, the_owner)
+
+        expect(owners_list_handler).to have_received(:ask).with(suggestion, limited_to: suggestion_options)
+      end
+
+      it 'updates owners list if user chooses to add' do
+        allow(owners_list_handler).to receive(:ask).and_return('y')
+        owners_list_handler.checker = checker
+
+        output = owners_list_handler.suggest_add_to_owners_list(line, the_owner)
+
+        expect(owners_list).to have_received(:<<).with(the_owner)
+        expect(owners_list_handler.content_changed).to be_truthy
+        expect(owners_list_handler.ignored_owners).not_to include(the_owner)
+        expect(output).to be_truthy
+      end
+
+      it 'update ignored owners and returns nil if user chooses to ignore' do
+        allow(owners_list_handler).to receive(:ask).and_return('i')
+        owners_list_handler.checker = checker
+
+        output = owners_list_handler.suggest_add_to_owners_list(line, the_owner)
+
+        expect(owners_list).not_to have_received(:<<)
+        expect(owners_list_handler.content_changed).not_to be_truthy
+        expect(owners_list_handler.ignored_owners).to include(the_owner)
+        expect(output).to be_nil
+      end
+
+      it 'throws :user_quit and does not change anything' do
+        allow(owners_list_handler).to receive(:ask).and_return('q')
+        owners_list_handler.checker = checker
+
+        expect { owners_list_handler.suggest_add_to_owners_list(line, the_owner) }.to throw_symbol :user_quit
+
+        expect(owners_list).not_to have_received(:<<)
+        expect(owners_list_handler.content_changed).not_to be_truthy
+        expect(owners_list_handler.ignored_owners).not_to include(the_owner)
+      end
+    end
+    # rubocop:enable Metrics/AbcSize
+    # rubocop:enable Metrics/MethodLength
+
+    # rubocop:disable RSpec/EmptyExampleGroup
+    context 'when ignored owners list is empty' do
+      before do
+      end
+
+      test_with_non_ignored_owner
+    end
+
+    context 'when ignored owners list does not contain provided owner' do
+      before do
+        owners_list_handler.ignored_owners.push(another_owner1, another_owner2)
+      end
+
+      test_with_non_ignored_owner
+    end
+    # rubocop:enable RSpec/EmptyExampleGroup
+
+    context 'when ignore owners list contains provided owner' do
+      let(:original_ignored_owners) { [another_owner1, the_owner, another_owner2] }
+
+      before do
+        owners_list_handler.ignored_owners.push(*original_ignored_owners)
+      end
+
+      it 'does nothing and returns nil' do
+        allow(owners_list_handler).to receive(:ask)
+        owners_list_handler.checker = checker
+
+        output = owners_list_handler.suggest_add_to_owners_list(line, the_owner)
+
+        expect(owners_list_handler).not_to have_received(:ask)
+        expect(owners_list_handler.content_changed).not_to be_truthy
+        expect(owners_list_handler.ignored_owners).to eq(original_ignored_owners)
+        expect(output).to be_nil
+      end
+    end
+  end
 end
