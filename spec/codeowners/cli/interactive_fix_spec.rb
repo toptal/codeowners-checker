@@ -1,53 +1,35 @@
 # frozen_string_literal: true
 
 RSpec.describe Codeowners::Cli::InteractiveFix do
-  include_context 'when main cli handler setup'
+  let(:interactive_fix) { described_class.new }
+  let(:cli_content_changed_flag) { interactive_fix.content_changed }
+  let(:new_file) { 'new_file.rb' }
 
   describe '#suggest_add_to_codeowners' do
-    let(:new_file) { 'test.rb' }
-    let(:patterns_list) do
-      checker.main_group.send(:list)
-    end
-    let(:pattern_added) do
-      patterns_list.first.instance_variable_get(:@line)
-    end
-    let(:main_handler_content_changed_flag) do
-      main_handler.send(:content_changed)
+    before do
+      allow(interactive_fix).to receive(:add_to_codeowners_dialog).with(new_file).and_return(ask_selection)
     end
 
     context 'when (y)es answer' do
-      let(:add_to_codeowners_question_message) { 'Add to the end of the CODEOWNERS file?' }
+      let(:ask_selection) { 'y' }
 
       before do
-        allow(interactive_fix).to receive(:add_to_codeowners_dialog).with(new_file)
-                                                                    .and_return(ask_yes_selection)
+        allow(interactive_fix).to receive(:add_to_codeowners)
       end
 
-      context 'when developer selects default owner' do
-        let(:pattern_expected) { "#{new_file} #{default_owner}" }
-
-        before do
-          allow(owners_list_handler).to receive(:ask).with(new_owner_ask_title).and_return(default_owner)
-        end
-
-        include_context 'when successful add owner behavior'
-      end
-
-      context 'when developer adds new owner' do
-        let(:pattern_expected) { "#{new_file} #{new_owner}" }
-
-        before do
-          allow(owners_list_handler).to receive(:ask).with(new_owner_ask_title).and_return(new_owner)
-        end
-
-        include_context 'when successful add owner behavior'
+      it 'calls #add_to_codeowners with new_file' do
+        interactive_fix.suggest_add_to_codeowners(new_file)
+        expect(interactive_fix).to have_received(:add_to_codeowners).with(new_file)
       end
     end
 
     context 'when (i)gnore answer' do
       let(:ask_selection) { 'i' }
 
-      include_context 'when new file skipped'
+      it 'skips new file' do
+        interactive_fix.suggest_add_to_codeowners(new_file)
+        expect(interactive_fix).not_to receive(:add_to_codeowners)
+      end
     end
 
     context 'when (q)uit answer' do
@@ -57,7 +39,45 @@ RSpec.describe Codeowners::Cli::InteractiveFix do
         allow(interactive_fix).to receive(:throw).with(:user_quit).and_return(nil)
       end
 
-      include_context 'when new file skipped'
+      it 'skips new file' do
+        interactive_fix.suggest_add_to_codeowners(new_file)
+        expect(interactive_fix).not_to receive(:add_to_codeowners)
+      end
+    end
+  end
+
+  describe '#add_to_codeowners_dialog' do
+    before do
+      allow(interactive_fix).to receive(:ask)
+    end
+
+    it 'asks to add owner to the CODEOWNERS file' do
+      interactive_fix.__send__(:add_to_codeowners_dialog, new_file)
+
+      expect(interactive_fix).to have_received(:ask).with(<<~QUESTION, limited_to: %w[y i q])
+        File added: #{new_file.inspect}. Add owner to the CODEOWNERS file?
+        (y) yes
+        (i) ignore
+        (q) quit and save
+      QUESTION
+    end
+  end
+
+  describe '#add_to_codeowners' do
+    let(:assign_file_owner_class) { Codeowners::Cli::Helpers::AssignFileOwner }
+    let(:add_pattern_into_group_class) { Codeowners::Cli::Helpers::AddPatternIntoGroup }
+
+    before do
+      allow(assign_file_owner_class).to receive_message_chain(:new, :pattern) # rubocop:disable RSpec/MessageChain
+      allow(add_pattern_into_group_class).to receive_message_chain(:new, :run) # rubocop:disable RSpec/MessageChain
+    end
+
+    it 'initiates AssignFileOwner, AddPatternIntoGroup and triggers @content_changed flag' do
+      interactive_fix.__send__(:add_to_codeowners, new_file)
+
+      expect(assign_file_owner_class).to have_received(:new)
+      expect(add_pattern_into_group_class).to have_received(:new)
+      expect(cli_content_changed_flag).to be_truthy
     end
   end
 end

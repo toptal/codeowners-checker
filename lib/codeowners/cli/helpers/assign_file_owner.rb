@@ -15,10 +15,10 @@ module Codeowners
       #   EG:
       #
       #     Owners:
-      #     1 - @toptal/bootcamp
-      #     2 - @toptal/ninjas
+      #     1 - @company/backend
+      #     2 - @company/frontend
       #
-      #     Choose owner, add new one or leave empty to use "@toptal/bootcamp".
+      #     Choose owner, add new one or leave empty to use "@company/backend".
       #     New owner:
       #
       # - If there are no any existing owners, then
@@ -27,7 +27,7 @@ module Codeowners
       #   EG:
       #
       #     Owners:
-      #     Choose owner, add new one or leave empty to use "@toptal/bootcamp".
+      #     Choose owner, add new one or leave empty to use "@company/backend".
       #     New owner:
       #
       # Dialogs and pattern generation process delegated to 'owners_list_handler',

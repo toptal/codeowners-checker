@@ -84,7 +84,7 @@ module Codeowners
         @owners_list_handler.checker = @checker
 
         @interactive_fix = InteractiveFix.new
-        @interactive_fix.main_handler = self
+        @interactive_fix.cli = self
       end
 
       def suggest_add_to_owners_list(file, owner)

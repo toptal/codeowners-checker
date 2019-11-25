@@ -13,14 +13,14 @@ module Codeowners
       #   EG:
       #
       #     Owners:
-      #     1 - @toptal/bootcamp
-      #     2 - @toptal/ninjas
-      #     Choose owner, add new one or leave empty to use "@toptal/bootcamp".
+      #     1 - @company/backend
+      #     2 - @company/frontend
+      #     Choose owner, add new one or leave empty to use "@company/backend".
       #     New owner:  2
       #     Possible groups to which the pattern belongs:
-      #     1 - # Ninjas - Top
-      #     2 - # Ninjas - Middle
-      #     3 - # Ninjas - Bottom
+      #     1 - # @company/backend - API
+      #     2 - # @company/backend - WEB
+      #     3 - # @company/backend - Billing
       #     Choose group:
       #
       #   If prompted number of subgroup is valid, then

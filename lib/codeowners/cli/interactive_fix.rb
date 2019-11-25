@@ -51,7 +51,7 @@ module Codeowners
       extend Forwardable
       include InteractiveHelpers
 
-      attr_accessor :main_handler
+      attr_accessor :cli
       attr_reader :content_changed
 
       no_commands do
@@ -69,7 +69,7 @@ module Codeowners
 
         private
 
-        def_delegators :main_handler, :checker, :options, :owners_list_handler
+        def_delegators :cli, :checker, :options, :owners_list_handler
 
         def add_to_codeowners_dialog(file)
           ask(<<~QUESTION, limited_to: %w[y i q])

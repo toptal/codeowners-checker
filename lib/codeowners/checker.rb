@@ -15,13 +15,15 @@ module Codeowners
   # By default (:validate_owners property) it also reads OWNERS with list of all
   # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
+    DEFAULT_HEAD = 'HEAD'
+
     attr_accessor :when_useless_pattern, :when_new_file, :owners_list
 
     # Get repo metadata and compare with the owners
-    def initialize(repo, from, to)
+    def initialize(repo, from = DEFAULT_HEAD, to = DEFAULT_HEAD)
       @git = Git.open(repo, log: Logger.new(IO::NULL))
       @repo_dir = repo
-      @from = from || 'HEAD'
+      @from = from
       @to = to
       @owners_list = OwnersList.new(@repo_dir)
     end

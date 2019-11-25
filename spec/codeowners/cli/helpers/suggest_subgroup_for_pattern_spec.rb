@@ -1,26 +1,25 @@
 # frozen_string_literal: true
 
 RSpec.describe Codeowners::Cli::Helpers::SuggestSubgroupForPattern do
-  include_context 'when main cli handler setup'
+  include_context 'when owners prepared'
+  include_context 'when new file pattern prepared'
+  include_context 'when checker for cli prepared'
 
-  let(:suggest_subgroup_for_pattern) do
-    described_class.new(interactive_fix, pattern)
-  end
-
-  include_context 'when pattern related objects prepared'
+  let(:suggest_subgroup_for_pattern) { described_class.new(interactive_fix, pattern) }
+  let(:interactive_fix) { Codeowners::Cli::InteractiveFix.new }
 
   describe '#run' do
     context 'when there are existing subgroups for selected owner' do
-      include_context 'when there are subgroups which are belong to selected owner'
+      include_context 'when subgroups for selected owner are exist'
 
       let(:selected_subgroup_valid_trigger) do
-        suggest_subgroup_for_pattern.send(:selected_subgroup_index_is_valid?)
+        suggest_subgroup_for_pattern.__send__(:selected_subgroup_index_is_valid?)
       end
       let(:selected_subgroup) do
-        suggest_subgroup_for_pattern.send(:subgroups)[selected_group_index - 1]
+        suggest_subgroup_for_pattern.__send__(:subgroups)[selected_group_index - 1]
       end
       let(:last_pattern_in_selected_subgroup) do
-        selected_subgroup.send(:list).last
+        selected_subgroup.__send__(:list).last
       end
 
       before do
@@ -28,9 +27,7 @@ RSpec.describe Codeowners::Cli::Helpers::SuggestSubgroupForPattern do
       end
 
       context 'when subgroup selected from suggested list' do
-        let(:selected_group_index) do
-          existing_subgroups_of_selected_owner_group.size
-        end
+        let(:selected_group_index) { subgroups.size }
 
         it 'adds new pattern into selected subgroup' do
           expect(selected_subgroup_valid_trigger).to be_truthy
@@ -40,9 +37,7 @@ RSpec.describe Codeowners::Cli::Helpers::SuggestSubgroupForPattern do
       end
 
       context 'when provided subgroup index is wrong' do
-        let(:selected_group_index) do
-          existing_subgroups_of_selected_owner_group.size + 1 # not real
-        end
+        let(:selected_group_index) { subgroups.size + 1 } # not real
 
         it 'returns from #run function without further actions' do
           expect(selected_subgroup_valid_trigger).to be_falsey
@@ -62,18 +57,16 @@ RSpec.describe Codeowners::Cli::Helpers::SuggestSubgroupForPattern do
   end
 
   describe '#show_suggestion_dialog' do
-    include_context 'when there are subgroups which are belong to selected owner'
+    include_context 'when subgroups for selected owner are exist'
 
     let(:selected_group_index) { 2 }
-    let(:dialog_output) do
-      suggest_subgroup_for_pattern.send(:show_suggestion_dialog)
-    end
+    let(:dialog_output) { suggest_subgroup_for_pattern.__send__(:show_suggestion_dialog) }
 
     it 'displays list of existing subgroups for selected owner' do
       expect { dialog_output }.to output(<<~MESSAGE).to_stdout
         Possible groups to which the pattern belongs:
-        1 - #{foo_subgroup_heading}
-        2 - #{bar_subgroup_heading}
+        1 - #{backend_team_api_heading}
+        2 - #{backend_team_billing_heading}
       MESSAGE
     end
   end
