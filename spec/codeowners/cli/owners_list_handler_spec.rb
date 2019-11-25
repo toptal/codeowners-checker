@@ -113,9 +113,11 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
       allow(checker).to receive(:owners_list).and_return(owners_list)
     end
 
-    # rubocop:disable Metrics/AbcSize
-    # rubocop:disable Metrics/MethodLength
-    def self.test_with_non_ignored_owner
+    shared_examples 'provided owner is not ignored' do
+      before do
+        owners_list_handler.ignored_owners.push(*original_ignored_owners)
+      end
+
       it 'suggest owner addition' do
         allow(owners_list_handler).to receive(:ask)
 
@@ -159,25 +161,18 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
         expect(owners_list_handler.ignored_owners).not_to include(the_owner)
       end
     end
-    # rubocop:enable Metrics/AbcSize
-    # rubocop:enable Metrics/MethodLength
 
-    # rubocop:disable RSpec/EmptyExampleGroup
     context 'when ignored owners list is empty' do
-      before do
+      it_behaves_like 'provided owner is not ignored' do
+        let(:original_ignored_owners) { [] }
       end
-
-      test_with_non_ignored_owner
     end
 
     context 'when ignored owners list does not contain provided owner' do
-      before do
-        owners_list_handler.ignored_owners.push(another_owner1, another_owner2)
+      it_behaves_like 'provided owner is not ignored' do
+        let(:original_ignored_owners) { [another_owner1, another_owner2] }
       end
-
-      test_with_non_ignored_owner
     end
-    # rubocop:enable RSpec/EmptyExampleGroup
 
     context 'when ignore owners list contains provided owner' do
       let(:original_ignored_owners) { [another_owner1, the_owner, another_owner2] }
