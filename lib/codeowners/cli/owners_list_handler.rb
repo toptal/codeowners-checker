@@ -36,12 +36,12 @@ module Codeowners
         end
 
         def suggest_add_to_owners_list(line, owner)
-          return nil if @ignored_owners.include?(owner)
+          return nil if ignored_owners.include?(owner)
 
           case add_to_ownerslist_dialog(line, owner)
           when 'y' then add_to_ownerslist(owner)
           when 'i'
-            @ignored_owners << owner
+            ignored_owners << owner
             nil
           when 'q' then throw :user_quit
           end
