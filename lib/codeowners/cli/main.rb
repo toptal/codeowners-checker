@@ -49,6 +49,14 @@ module Codeowners
 
       def interactive_mode
         @checker.fix!
+
+        if @owners_list_handler.ignored_owners.any?
+          puts 'Ignored owners: '
+          @owners_list_handler.ignored_owners.each do |owner|
+            puts " * #{owner}"
+          end
+        end
+
         return unless content_changed
 
         write_changes
