@@ -24,10 +24,10 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
     end
 
     context 'when ignored list contains provided owner' do
-      let(:ingored_owners) { [another_owner1, the_owner] }
+      let(:ignored_owners) { [another_owner1, the_owner] }
 
       before do
-        allow(owners_list_handler).to receive(:ignored_owners).and_return(ingored_owners)
+        allow(owners_list_handler).to receive(:ignored_owners).and_return(ignored_owners)
       end
 
       it 'does not call #add_to_ownerslist_dialog and return nil' do
@@ -39,10 +39,10 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
     end
 
     context 'when ignored list does not contain provided owner' do
-      let(:ingored_owners) { [another_owner1, another_owner2] }
+      let(:ignored_owners) { [another_owner1, another_owner2] }
 
       before do
-        allow(owners_list_handler).to receive(:ignored_owners).and_return(ingored_owners)
+        allow(owners_list_handler).to receive(:ignored_owners).and_return(ignored_owners)
       end
 
       it 'calls #add_to_ownerslist_dialog' do
