@@ -12,7 +12,7 @@ require_relative '../checker/owner'
 module Codeowners
   module Cli
     # Command Line Interface used by bin/codeowners-checker.
-    class Main < Base
+    class Main < Base # rubocop:disable Metrics/ClassLength
       include InteractiveHelpers
 
       option :from, default: 'origin/master'
