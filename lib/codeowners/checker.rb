@@ -15,8 +15,6 @@ module Codeowners
   # By default (:validate_owners property) it also reads OWNERS with list of all
   # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
-    attr_accessor :when_useless_pattern, :when_new_file, :owners_list
-
     # Get repo metadata and compare with the owners
     def initialize(repo, from, to)
       @git = Git.open(repo, log: Logger.new(IO::NULL))
@@ -71,10 +69,7 @@ module Codeowners
       codeowners.select do |line|
         next unless line.pattern?
 
-        unless pattern_has_files(line.pattern)
-          @when_useless_pattern&.call(line)
-          true
-        end
+        !pattern_has_files(line.pattern)
       end
     end
 
@@ -109,7 +104,7 @@ module Codeowners
     end
 
     def consistent?
-      results.values.all?(&:empty?)
+      results.any?
     end
 
     def commit_changes!
@@ -127,13 +122,14 @@ module Codeowners
     private
 
     def results
-      @results ||=
-        {
-          missing_ref: missing_reference,
-          useless_pattern: useless_pattern,
-          invalid_owner: @owners_list.invalid_owner(@codeowners),
-          unrecognized_line: unrecognized_line
-        }
+      @results ||= Enumerator.new do |yielder|
+        missing_reference.each { |ref| yielder << [:missing_ref, ref] }
+        useless_pattern.each { |pattern| yielder << [:useless_pattern, pattern] }
+        @owners_list.invalid_owner(@codeowners).each do |(owner, missing)|
+          yielder << [:invalid_owner, owner, missing]
+        end
+        unrecognized_line.each { |line| yielder << [:unrecognized_line, line] }
+      end
     end
   end
 end

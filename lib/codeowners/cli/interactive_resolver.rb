@@ -19,6 +19,13 @@ module Codeowners
         create_wizards
       end
 
+      def handle(error_type, inconsistencies)
+        debugger
+        checker.when_useless_pattern = resolver.method(:handle_useless_pattern)
+        checker.when_new_file = resolver.method(:handle_new_file)
+        checker.owners_list.when_new_owner = resolver.method(:handle_new_owner)
+      end
+
       def handle_new_file(file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
         choice, pattern = @new_file_wizard.suggest_adding(file, @checker.main_group)
         throw :user_quit if choice == :quit

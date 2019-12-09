@@ -249,10 +249,7 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'complains about unrecognized line' do
-      expect(subject).to eq(missing_ref: [],
-                            useless_pattern: [],
-                            unrecognized_line: ['lib/shared/random.rb'],
-                            invalid_owner: [])
+      expect(subject.to_a).to eq([[:unrecognized_line, 'lib/shared/random.rb']])
     end
   end
 

@@ -6,7 +6,7 @@ module Codeowners
   class Checker
     # Manage OWNERS file reading, re-writing and fetching
     class OwnersList
-      attr_accessor :validate_owners, :when_new_owner, :filename
+      attr_accessor :validate_owners, :filename
       attr_writer :owners
 
       def initialize(repo)
@@ -45,12 +45,11 @@ module Codeowners
       def invalid_owner(codeowners)
         return [] unless @validate_owners
 
-        codeowners.select do |line|
+        codeowners.each_with_object([]) do |line, acc|
           next unless line.pattern?
 
           missing = line.owners - owners
-          missing.each { |owner| @when_new_owner&.call(line, owner) }
-          missing.any?
+          acc.push([line, missing]) if missing.any?
         end
       end
 
