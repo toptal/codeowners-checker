@@ -30,7 +30,7 @@ RSpec.describe 'Interactive mode' do
       owners: ['@mpospelov'],
       file_tree: { 'lib/new_file.rb' => 'bar' }
     ) do
-      expect_to_ask(<<~QUESTION, limited_to: ['i', 'e', 'd', 'q'])
+      expect_to_ask(<<~QUESTION, limited_to: %w[i e d q])
         (e) edit the pattern
         (d) delete the pattern
         (i) ignore
@@ -60,7 +60,7 @@ RSpec.describe 'Interactive mode' do
       owners: ['@mpospelov'],
       file_tree: { 'lib/new_file.rb' => 'bar' }
     ) do
-      expect_to_ask(<<~QUESTION, limited_to: ['y', 'i', 'd'])
+      expect_to_ask(<<~QUESTION, limited_to: %w[y i d])
         "@mpospelov" is in unrecognized format. Would you like to edit?
         (y) yes
         (i) ignore

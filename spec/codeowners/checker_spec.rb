@@ -272,6 +272,7 @@ RSpec.describe Codeowners::Checker do
       expect(subject.changes_with_ownership)
         .to eq('@owner' => [], '@owner2' => [], '@owner1' => [])
     end
+
     context 'when passing a specific owner' do
       it do
         expect(subject.changes_with_ownership('owner')).to be_empty

@@ -11,24 +11,25 @@ module IntegrationTestHelper
     expect(STDOUT).not_to receive(:puts)
   end
 
+  # rubocop: disable RSpec/AnyInstance
   def expect_to_ask(question, limited_to: %w[y i q])
     expect_any_instance_of(Thor).to receive(:ask).with(question, limited_to: limited_to) do
       yield if block_given?
     end
   end
+  # rubocop: enable RSpec/AnyInstance
 
+  # rubocop: disable Lint/HandleExceptions
   def start(codeowners: [], owners: [], file_tree: {}, flags: [])
     setup_project(codeowners: codeowners, file_tree: file_tree, owners: owners)
     flags.push('--from=HEAD~1')
-    pid = fork do
-      yield
+    yield
+    begin
       Codeowners::Cli::Main.start(['check', PROJECT_PATH, *flags])
+    rescue SystemExit
     end
-    _, status = Process.wait2(pid)
-    # RSpec process status code
-    return if status.exitstatus == 255 || status.exitstatus == 0
-    throw('rspec error inside process')
   end
+  # rubocop: enable Lint/HandleExceptions
 
   def create_file_tree(tree)
     tree.each do |file_path, content|

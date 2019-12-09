@@ -65,9 +65,7 @@ module Codeowners
 
     def useless_pattern
       @useless_pattern ||= codeowners.select do |line|
-        next unless line.pattern?
-
-        !pattern_has_files(line.pattern)
+        line.pattern? && !pattern_has_files(line.pattern)
       end
     end
 
