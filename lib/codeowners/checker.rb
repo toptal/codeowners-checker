@@ -26,10 +26,6 @@ module Codeowners
       @owners_list = OwnersList.new(@repo_dir)
     end
 
-    def transformers
-      @transformers ||= []
-    end
-
     def changes_to_analyze
       @git.diff(@from, @to).name_status
     end
@@ -96,8 +92,7 @@ module Codeowners
 
     def codeowners
       @codeowners ||= CodeOwners.new(
-        FileAsArray.new(CodeOwners.filename(@repo_dir)),
-        transformers: transformers
+        FileAsArray.new(CodeOwners.filename(@repo_dir))
       )
     end
 
