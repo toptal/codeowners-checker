@@ -7,6 +7,7 @@ end
 
 require 'bundler/setup'
 require 'codeowners/cli/main'
+require_relative 'support/integration_test_helper'
 
 Dir['lib/**/*.rb'].each { |file| require file[4..-1] }
 
@@ -16,6 +17,7 @@ RSpec.configure do |config|
 
   # Disable RSpec exposing methods globally on `Module` and `main`
   config.disable_monkey_patching!
+  config.include IntegrationTestHelper
 
   config.expect_with :rspec do |c|
     c.syntax = :expect

@@ -1,0 +1,3 @@
+[submodule "spec/fixtures/projects/no-issues"]
+	path = spec/fixtures/projects/no-issues
+	url = git@github.com:toptal/codeowners-checker.git
