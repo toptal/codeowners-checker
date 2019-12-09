@@ -77,10 +77,8 @@ module Codeowners
       }.freeze
 
       def report_errors!(checker)
-        checker.fix!.each do |(error_type, inconsistencies)|
-          next if inconsistencies.empty?
-
-          puts LABELS[error_type], '-' * 30, inconsistencies, '-' * 30
+        checker.fix!.group_by { |(error_type)| error_type }.each do |error_type, group|
+          puts LABELS[error_type], '-' * 30, group.map { |(_, inconsistencies)| inconsistencies }, '-' * 30
         end
       end
     end

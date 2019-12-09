@@ -13,9 +13,8 @@ module Codeowners
 
       def run_with(checker)
         resolver = InteractiveResolver.new(checker, @validate_owners, @default_owner)
-        checker.transformers << resolver.method(:process_parsed_line)
-        checker.fix!.each do |(error_type, inconsistencies)|
-          resolver.handle(error_type, inconsistencies)
+        checker.fix!.each do |(error_type, inconsistencies, meta)|
+          resolver.handle(error_type, inconsistencies, meta)
         end
         resolver.print_epilogue
         return unless resolver.made_changes?

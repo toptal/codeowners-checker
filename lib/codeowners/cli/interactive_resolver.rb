@@ -19,11 +19,14 @@ module Codeowners
         create_wizards
       end
 
-      def handle(error_type, inconsistencies)
-        debugger
-        checker.when_useless_pattern = resolver.method(:handle_useless_pattern)
-        checker.when_new_file = resolver.method(:handle_new_file)
-        checker.owners_list.when_new_owner = resolver.method(:handle_new_owner)
+      def handle(error_type, inconsistencies, meta)
+        case error_type
+        when :useless_pattern then handle_useless_pattern(inconsistencies)
+        when :missing_ref then handle_new_file(inconsistencies)
+        when :invalid_owner then handle_new_owner(inconsistencies, meta)
+        when :unrecognized_line then process_parsed_line(inconsistencies)
+        else raise ArgumentError, "unknown error_type: #{error_type}"
+        end
       end
 
       def handle_new_file(file) # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
