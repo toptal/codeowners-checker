@@ -68,7 +68,7 @@ module Codeowners
     end
 
     def useless_pattern
-      codeowners.select do |line|
+      @useless_pattern ||= codeowners.select do |line|
         next unless line.pattern?
 
         !pattern_has_files(line.pattern)
@@ -76,7 +76,7 @@ module Codeowners
     end
 
     def missing_reference
-      added_files.reject(&method(:defined_owner?))
+      @missing_reference ||= added_files.reject(&method(:defined_owner?))
     end
 
     def pattern_has_files(pattern)
@@ -106,7 +106,7 @@ module Codeowners
     end
 
     def consistent?
-      results.any?
+      results.none?
     end
 
     def commit_changes!
@@ -116,19 +116,21 @@ module Codeowners
     end
 
     def unrecognized_line
-      codeowners.map do |line|
-        line.to_file if line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
-      end.compact
+      @unrecognized_line ||= codeowners.select { |line| line.is_a?(Codeowners::Checker::Group::UnrecognizedLine) }
     end
 
     private
+
+    def invalid_owners
+      @invalid_owners ||= @owners_list.invalid_owner(@codeowners)
+    end
 
     def results
       @results ||= Enumerator.new do |yielder|
         missing_reference.each { |ref| yielder << [:missing_ref, ref] }
         useless_pattern.each { |pattern| yielder << [:useless_pattern, pattern] }
-        @owners_list.invalid_owner(@codeowners).each do |(owner, missing)|
-          yielder << [:invalid_owner, owner, missing]
+        invalid_owners.each do |(owner, missing)|
+          missing.each { |m| yielder << [:invalid_owner, owner, m] }
         end
         unrecognized_line.each { |line| yielder << [:unrecognized_line, line] }
       end
