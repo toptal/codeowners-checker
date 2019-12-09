@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'fileutils'
 require 'tmpdir'
 
 require 'codeowners/checker/file_as_array'

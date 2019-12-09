@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'fileutils'
 require 'codeowners/checker'
 
 RSpec.describe Codeowners::Checker do
@@ -248,7 +247,8 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'complains about unrecognized line' do
-      expect(subject.to_a).to eq([[:unrecognized_line, 'lib/shared/random.rb']])
+      error_type, unrecognized_line_check = subject.first
+      expect([error_type, unrecognized_line_check.to_s]).to eq([:unrecognized_line, 'lib/shared/random.rb'])
     end
   end
 
