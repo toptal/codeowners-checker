@@ -11,6 +11,12 @@ module IntegrationTestHelper
     expect(STDOUT).not_to receive(:puts)
   end
 
+  def expect_to_ask(question, limited_to: %w[y i q])
+    expect_any_instance_of(Thor).to receive(:ask).with(question, limited_to: limited_to) do
+      yield if block_given?
+    end
+  end
+
   def start(codeowners: [], owners: [], file_tree: {}, flags: [])
     setup_project(codeowners: codeowners, file_tree: file_tree, owners: owners)
     flags.push('--from=HEAD~1')
