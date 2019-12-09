@@ -15,6 +15,8 @@ module Codeowners
   # By default (:validate_owners property) it also reads OWNERS with list of all
   # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
+    attr_reader :owners_list
+
     # Get repo metadata and compare with the owners
     def initialize(repo, from, to)
       @git = Git.open(repo, log: Logger.new(IO::NULL))
