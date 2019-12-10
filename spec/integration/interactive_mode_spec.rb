@@ -68,4 +68,32 @@ RSpec.describe 'Interactive mode' do
       QUESTION
     end
   end
+
+  context 'with fzf installed' do
+    def expect_to_run_fzf_suggestion(with_pattern:)
+      search_mock = instance_double('Codeowners::Cli::FilesFromFZFSearch')
+      expect(Codeowners::Cli::FilesFromFZFSearch).to receive(:new).with(with_pattern) { search_mock }
+      expect(search_mock).to receive(:pick_suggestions) { yield }
+    end
+
+    before { expect(Codeowners::Cli::SuggestFileFromPattern).to receive(:installed_fzf?).and_return(true) }
+
+    it 'runs with useless_pattern issue' do
+      start(
+        codeowners: ['lib/new_file.rb @mpospelov', 'liba/* @mpospelov'],
+        owners: ['@mpospelov'],
+        file_tree: { 'lib/new_file.rb' => 'bar' }
+      ) do
+        expect_to_run_fzf_suggestion(with_pattern: 'liba/*') { 'lib/' }
+        expect_to_ask(<<~QUESTION, limited_to: %w[y i e d q])
+          Replace with: "lib/"?
+          (y) yes
+          (i) ignore
+          (e) edit the pattern
+          (d) delete the pattern
+          (q) quit and save
+        QUESTION
+      end
+    end
+  end
 end
