@@ -30,8 +30,8 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
     context 'when ignored some owners' do
       before do
         allow(new_owner_wizard).to receive(:suggest_adding).and_return(:ignore)
-        resolver.handle_new_owner(Codeowners::Checker::Group::Pattern.new('pattern1 @ownerA'), '@ownerA')
-        resolver.handle_new_owner(Codeowners::Checker::Group::Pattern.new('pattern2 @ownerB'), '@ownerB')
+        resolver.handle_new_owners(Codeowners::Checker::Group::Pattern.new('pattern1 @ownerA'), ['@ownerA'])
+        resolver.handle_new_owners(Codeowners::Checker::Group::Pattern.new('pattern2 @ownerB'), ['@ownerB'])
       end
 
       it 'outputs ignored owners list' do
@@ -82,7 +82,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
       let(:user_addition_choice) { [:add, pattern] }
 
       before do
-        allow(resolver).to receive(:handle_new_owner).with(pattern, owner)
+        allow(resolver).to receive(:handle_new_owners).with(pattern, [owner])
       end
 
       context 'when validate_owners is on' do
@@ -94,7 +94,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
           resolver.handle_new_file(file)
 
           expect(owners_list).to have_received(:valid_owner?).with(owner)
-          expect(resolver).to have_received(:handle_new_owner).with(pattern, owner)
+          expect(resolver).to have_received(:handle_new_owners).with(pattern, [owner])
         end
 
         it 'does not handles valid owners like new one' do
@@ -103,7 +103,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
           resolver.handle_new_file(file)
 
           expect(owners_list).to have_received(:valid_owner?).with(owner)
-          expect(resolver).not_to have_received(:handle_new_owner)
+          expect(resolver).not_to have_received(:handle_new_owners)
         end
       end
 
@@ -156,7 +156,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
     end
   end
 
-  describe '#handle_new_owner' do
+  describe '#handle_new_owners' do
     let(:file) { 'some/file.rb' }
     let(:owner) { '@owner' }
     let(:pattern) { Codeowners::Checker::Group::Pattern.new('some/file.rb @owner') }
@@ -168,7 +168,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
     end
 
     it 'suggests to add it' do
-      resolver.handle_new_owner(pattern, owner)
+      resolver.handle_new_owners(pattern, [owner])
 
       expect(new_owner_wizard).to have_received(:suggest_adding).with(pattern, owner)
     end
@@ -181,7 +181,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
       end
 
       it 'adds it to owners list and marks changes' do
-        expect { resolver.handle_new_owner(pattern, owner) }.to change(resolver, :made_changes?).to(true)
+        expect { resolver.handle_new_owners(pattern, [owner]) }.to change(resolver, :made_changes?).to(true)
         expect(owners_list).to have_received(:<<).with(owner)
       end
     end
@@ -190,8 +190,8 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
       let(:user_choice) { :ignore }
 
       it 'does nothing on next call and includes it to epilogue' do
-        resolver.handle_new_owner(pattern, owner)
-        resolver.handle_new_owner(another_pattern, owner)
+        resolver.handle_new_owners(pattern, [owner])
+        resolver.handle_new_owners(another_pattern, [owner])
 
         expect(new_owner_wizard).to have_received(:suggest_adding).once
         expect { resolver.print_epilogue }.to output(<<~OUTPUT).to_stdout
@@ -205,7 +205,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
       let(:user_choice) { :quit }
 
       it 'throws :user_quit' do
-        expect { resolver.handle_new_owner(pattern, owner) }.to throw_symbol(:user_quit)
+        expect { resolver.handle_new_owners(pattern, [owner]) }.to throw_symbol(:user_quit)
       end
     end
   end

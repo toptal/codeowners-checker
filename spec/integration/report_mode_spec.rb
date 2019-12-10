@@ -55,7 +55,7 @@ RSpec.describe 'Report mode' do
       expect_to_puts(
         'Invalid owner',
         '------------------------------',
-        ['lib/new_file.rb @foobar'],
+        ['lib/new_file.rb @foobar ["@foobar"]'],
         '------------------------------'
       )
     end

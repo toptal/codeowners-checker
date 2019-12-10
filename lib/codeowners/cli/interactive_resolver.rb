@@ -23,7 +23,7 @@ module Codeowners
         case error_type
         when :useless_pattern then handle_useless_pattern(inconsistencies)
         when :missing_ref then handle_new_file(inconsistencies)
-        when :invalid_owner then handle_new_owner(inconsistencies, meta)
+        when :invalid_owner then handle_new_owners(inconsistencies, meta)
         when :unrecognized_line then process_parsed_line(inconsistencies)
         else raise ArgumentError, "unknown error_type: #{error_type}"
         end
@@ -44,6 +44,10 @@ module Codeowners
           @checker.main_group.add(pattern)
           @made_changes = true
         end
+      end
+
+      def handle_new_owners(line, missing_owners)
+        missing_owners.each { |owner| handle_new_owner(line, owner) }
       end
 
       def handle_new_owner(line, owner)
@@ -113,7 +117,7 @@ module Codeowners
       def validate_owner(pattern, owner)
         return if @checker.owners_list.valid_owner?(pattern.owner)
 
-        handle_new_owner(pattern, owner)
+        handle_new_owners(pattern, [owner])
       end
     end
   end

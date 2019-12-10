@@ -122,9 +122,7 @@ module Codeowners
       @results ||= Enumerator.new do |yielder|
         missing_reference.each { |ref| yielder << [:missing_ref, ref] }
         useless_pattern.each { |pattern| yielder << [:useless_pattern, pattern] }
-        invalid_owners.each do |(owner, missing)|
-          missing.each { |m| yielder << [:invalid_owner, owner, m] }
-        end
+        invalid_owners.each { |(owner, missing)| yielder << [:invalid_owner, owner, missing] }
         unrecognized_line.each { |line| yielder << [:unrecognized_line, line] }
       end
     end
