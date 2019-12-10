@@ -76,7 +76,7 @@ RSpec.describe 'Interactive mode' do
       expect(search_mock).to receive(:pick_suggestions) { yield }
     end
 
-    before { expect(Codeowners::Cli::SuggestFileFromPattern).to receive(:installed_fzf?).and_return(true) }
+    before { allow(Codeowners::Cli::SuggestFileFromPattern).to receive(:installed_fzf?).and_return(true) }
 
     it 'runs with useless_pattern issue' do
       start(

@@ -77,8 +77,13 @@ module Codeowners
       }.freeze
 
       def report_errors!(checker)
-        checker.fix!.group_by { |(error_type)| error_type }.each do |error_type, group|
-          puts LABELS[error_type], '-' * 30, group.map { |(_, inconsistencies, meta)| [inconsistencies, meta].compact.map(&:to_s).join(' ') }, '-' * 30
+        checker.fix!.reduce(nil) do |prev_error_type, (error_type, inconsistencies, meta)|
+          puts('-' * 30, LABELS[error_type], '-' * 30) if prev_error_type != error_type
+          case error_type
+          when :invalid_owner then puts("#{inconsistencies} MISSING: #{meta.join(', ')}")
+          else puts(inconsistencies.to_s)
+          end
+          error_type
         end
       end
     end

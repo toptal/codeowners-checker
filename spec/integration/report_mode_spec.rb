@@ -21,11 +21,11 @@ RSpec.describe 'Report mode' do
     report_start(file_tree: { 'lib/new_file.rb' => 'bar' }) do
       expect_to_puts('File tmp/test-project/.github/CODEOWNERS is inconsistent:')
       expect_to_puts(
-        'No owner defined',
         '------------------------------',
-        ['lib/new_file.rb'],
+        'No owner defined',
         '------------------------------'
       )
+      expect_to_puts('lib/new_file.rb')
     end
   end
 
@@ -37,27 +37,27 @@ RSpec.describe 'Report mode' do
     ) do
       expect_to_puts('File tmp/test-project/.github/CODEOWNERS is inconsistent:')
       expect_to_puts(
-        'Useless patterns',
         '------------------------------',
-        ['liba/* @mpospelov'],
+        'Useless patterns',
         '------------------------------'
       )
+      expect_to_puts('liba/* @mpospelov')
     end
   end
 
   it 'runs with invalid_owner issue' do
     report_start(
-      codeowners: ['lib/new_file.rb @foobar'],
+      codeowners: ['lib/new_file.rb @mpospelov @foobar'],
       owners: ['@mpospelov'],
       file_tree: { 'lib/new_file.rb' => 'bar' }
     ) do
       expect_to_puts('File tmp/test-project/.github/CODEOWNERS is inconsistent:')
       expect_to_puts(
-        'Invalid owner',
         '------------------------------',
-        ['lib/new_file.rb @foobar ["@foobar"]'],
+        'Invalid owner',
         '------------------------------'
       )
+      expect_to_puts('lib/new_file.rb @mpospelov @foobar MISSING: @foobar')
     end
   end
 
@@ -69,11 +69,11 @@ RSpec.describe 'Report mode' do
     ) do
       expect_to_puts('File tmp/test-project/.github/CODEOWNERS is inconsistent:')
       expect_to_puts(
-        'Unrecognized line',
         '------------------------------',
-        ['@mpospelov'],
+        'Unrecognized line',
         '------------------------------'
       )
+      expect_to_puts('@mpospelov')
     end
   end
 end

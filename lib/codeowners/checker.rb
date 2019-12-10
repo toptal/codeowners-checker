@@ -115,7 +115,7 @@ module Codeowners
     private
 
     def invalid_owners
-      @invalid_owners ||= @owners_list.invalid_owner(@codeowners)
+      @invalid_owners ||= @owners_list.invalid_owner(codeowners)
     end
 
     def results
