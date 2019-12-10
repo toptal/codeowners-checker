@@ -26,6 +26,11 @@ module Codeowners
           owners.first
         end
 
+        def rename_owner(owner, new_owner)
+          owners.delete(owner)
+          owners << new_owner unless owners.include?(new_owner)
+        end
+
         # Parse the line counting whitespaces between pattern and owners.
         def parse(line)
           @pattern, *@owners = line.split(/\s+/)

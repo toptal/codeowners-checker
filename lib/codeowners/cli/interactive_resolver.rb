@@ -50,13 +50,17 @@ module Codeowners
         missing_owners.each { |owner| handle_new_owner(line, owner) }
       end
 
-      def handle_new_owner(line, owner)
+      def handle_new_owner(line, owner) # rubocop:disable Metrics/MethodLength
         return if @ignored_owners.include?(owner)
 
-        choice = @new_owner_wizard.suggest_adding(line, owner)
+        choice, new_owner = @new_owner_wizard.suggest_fixing(line, owner)
         case choice
         when :add
           @checker.owners_list << owner
+          @made_changes = true
+        when :rename
+          line.rename_owner(owner, new_owner)
+          @checker.owners_list << new_owner
           @made_changes = true
         when :ignore
           @ignored_owners << owner
@@ -108,7 +112,7 @@ module Codeowners
       private
 
       def create_wizards
-        @new_owner_wizard = Wizards::NewOwnerWizard.new
+        @new_owner_wizard = Wizards::NewOwnerWizard.new(@checker.owners_list)
         @new_file_wizard = Wizards::NewFileWizard.new(@default_owner)
         @useless_pattern_wizard = Wizards::UselessPatternWizard.new
         @unrecognized_line_wizard = Wizards::UnrecognizedLineWizard.new

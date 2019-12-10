@@ -102,8 +102,8 @@ module Codeowners
     end
 
     def commit_changes!
-      @git.add(@codeowners.filename)
-      @git.add(@owners_list.filename)
+      @git.add(File.realpath(@codeowners.filename))
+      @git.add(File.realpath(@owners_list.filename))
       @git.commit('Fix pattern :robot:')
     end
 

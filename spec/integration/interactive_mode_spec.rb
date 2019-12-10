@@ -3,6 +3,14 @@
 require 'codeowners/checker'
 
 RSpec.describe 'Interactive mode' do
+  def codeowners_file_body
+    File.open(File.join(IntegrationTestRunner::PROJECT_PATH, '.github', 'CODEOWNERS')).read
+  end
+
+  def owners_file_body
+    File.open(File.join(IntegrationTestRunner::PROJECT_PATH, '.github', 'OWNERS')).read
+  end
+
   subject(:runner) do
     IntegrationTestRunner
       .new(codeowners: codeowners, owners: owners, file_tree: file_tree, answers: answers)
@@ -27,7 +35,7 @@ RSpec.describe 'Interactive mode' do
     let(:answers) { ['q'] }
 
     it 'asks about missing owner file' do
-      expect(runner).to ask(<<~QUESTION)
+      expect(runner).to ask(<<~QUESTION).limited_to(%w[y i q])
         File added: "lib/new_file.rb". Add owner to the CODEOWNERS file?
         (y) yes
         (i) ignore
@@ -40,7 +48,7 @@ RSpec.describe 'Interactive mode' do
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
 
     it 'asks about missing owner file' do
-      expect(runner).to ask(<<~QUESTION)
+      expect(runner).to ask(<<~QUESTION).limited_to(%w[y i q])
         File added: "lib/new_file.rb". Add owner to the CODEOWNERS file?
         (y) yes
         (i) ignore
@@ -55,6 +63,7 @@ RSpec.describe 'Interactive mode' do
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
 
     it 'ask to edit useless paterns from codeowners' do
+      allow(Codeowners::Cli::SuggestFileFromPattern).to receive(:installed_fzf?).and_return(false)
       expect(runner).to ask(<<~QUESTION).limited_to(%w[i e d q])
         (e) edit the pattern
         (d) delete the pattern
@@ -90,14 +99,23 @@ RSpec.describe 'Interactive mode' do
     let(:codeowners) { ['lib/new_file.rb @mpospelov @foobar'] }
     let(:owners) { ['@mpospelov'] }
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+    let(:answers) { ['r', '@mpospelov', 'y'] }
 
     it 'asks to add new owner to owners' do
-      expect(runner).to ask(<<~QUESTION)
+      question = <<~QUESTION
         Unknown owner: @foobar for pattern: lib/new_file.rb. Add owner to the OWNERS file?
         (y) yes
+        (r) rename owner
         (i) ignore owner in this session
         (q) quit and save
       QUESTION
+      expect(runner)
+        .to ask(question)
+        .limited_to(%w[y r i q])
+        .and ask('New owner: ')
+        .and ask('Commit changes?')
+      expect(codeowners_file_body).to eq("lib/new_file.rb @mpospelov\n")
+      expect(owners_file_body.scan('@mpospelov')).to contain_exactly('@mpospelov')
     end
   end
 
