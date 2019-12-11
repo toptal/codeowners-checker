@@ -76,9 +76,13 @@ module Codeowners
         unrecognized_line: 'Unrecognized line'
       }.freeze
 
+      def print_delimiter_line(error_type)
+        puts('-' * 30, LABELS[error_type], '-' * 30)
+      end
+
       def report_errors!(checker)
         checker.fix!.reduce(nil) do |prev_error_type, (error_type, inconsistencies, meta)|
-          puts('-' * 30, LABELS[error_type], '-' * 30) if prev_error_type != error_type
+          print_delimiter_line(error_type) if prev_error_type != error_type
           case error_type
           when :invalid_owner then puts("#{inconsistencies} MISSING: #{meta.join(', ')}")
           else puts(inconsistencies.to_s)
