@@ -3,7 +3,7 @@
 class IntegrationTestRunner
   include RSpec::Mocks::ExampleMethods
 
-  Result = Struct.new(:reports, :asks)
+  Result = Struct.new(:reports, :questions)
   PROJECT_PATH = File.join('tmp', 'test-project')
 
   def initialize(codeowners: [], owners: [], file_tree: {}, flags: [], answers: [])
@@ -13,7 +13,7 @@ class IntegrationTestRunner
     @flags = flags.tap { |f| f.push('--from=HEAD~1') }
     @answers = answers
     @reports = []
-    @asks = []
+    @questions = []
   end
 
   # rubocop: disable Lint/HandleExceptions
@@ -24,7 +24,7 @@ class IntegrationTestRunner
       Codeowners::Cli::Main.start(['check', PROJECT_PATH, *flags])
     rescue SystemExit
     end
-    Result.new(@reports.flatten, @asks)
+    Result.new(@reports.flatten, @questions)
   end
   # rubocop: enable Lint/HandleExceptions
 
@@ -71,15 +71,15 @@ class IntegrationTestRunner
     end
   end
 
+  # rubocop: disable RSpec/AnyInstance
   def setup_io_listeners
-    # TODO: I think for better testing and more robust testing
-    # we have to define a singleton with reporting responsibility
-    allow(STDOUT).to receive(:puts) { |*args| @reports << args }
-    allow_any_instance_of(Thor).to receive(:ask) do |args|
-      @asks << args
+    allow(Codeowners::Reporter).to receive(:print) { |*args| @reports << args }
+    allow_any_instance_of(Thor).to receive(:ask) do |_, question, limited_to|
+      @questions << [question, limited_to]
       @answers.shift
     end
   end
+  # rubocop: enable RSpec/AnyInstance
 
   RSpec::Matchers.define :report_with do |*expected_reports|
     match do |result|
@@ -103,7 +103,19 @@ class IntegrationTestRunner
   RSpec::Matchers.define :have_empty_report do
     match do |result|
       IntegrationTestRunner.assert_matcher_input(result)
-      result.reports.empty?
+      result.reports.empty? && result.questions.empty?
+    end
+
+    failure_message do |actual|
+      <<~MSG
+        expected that the report will be empty, but it includes:
+
+        #{actual.reports.map { |r| "- #{r}" }.join("\n")}
+
+        will include all of:
+
+        #{expected_reports.map { |r| "- #{r}" }.join("\n")}"
+      MSG
     end
   end
 
@@ -111,11 +123,24 @@ class IntegrationTestRunner
     match do |result|
       IntegrationTestRunner.assert_matcher_input(result)
       @limited_to ||= %w[y i q]
-      result.asks.include?([question, limited_to: @limited_to])
+      result.questions.include?([question, limited_to: @limited_to])
     end
 
     chain :limited_to do |limited_to|
       @limited_to = limited_to
+    end
+
+    failure_message do |actual|
+      <<~MSG
+        expected that the the following will questions:
+
+        #{actual.questions.map { |(q, limited_to)| "#{limited_to}\n#{q}" }.join("\n")}
+
+        will include:
+
+        #{{ limited_to: @limited_to }}
+        #{question}
+      MSG
     end
   end
 end

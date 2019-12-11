@@ -21,7 +21,7 @@ RSpec.describe 'Report mode' do
     it { is_expected.to report_with('✅ File is consistent') }
   end
 
-  context 'when owner_defined issue' do
+  context 'when missing_ref issue' do
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
 
     it 'reports missing owner file' do

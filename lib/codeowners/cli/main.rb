@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../checker'
+require_relative '../reporter'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
@@ -52,10 +53,10 @@ module Codeowners
 
       def report_inconsistencies(checker)
         if checker.consistent?
-          puts '✅ File is consistent'
+          Reporter.print '✅ File is consistent'
           exit 0
         else
-          puts "File #{checker.codeowners.filename} is inconsistent:"
+          Reporter.print "File #{checker.codeowners.filename} is inconsistent:"
           report_errors!(checker)
           exit(-1)
         end
@@ -69,24 +70,10 @@ module Codeowners
         checker
       end
 
-      LABELS = {
-        missing_ref: 'No owner defined',
-        useless_pattern: 'Useless patterns',
-        invalid_owner: 'Invalid owner',
-        unrecognized_line: 'Unrecognized line'
-      }.freeze
-
-      def print_delimiter_line(error_type)
-        puts('-' * 30, LABELS[error_type], '-' * 30)
-      end
-
       def report_errors!(checker)
         checker.fix!.reduce(nil) do |prev_error_type, (error_type, inconsistencies, meta)|
-          print_delimiter_line(error_type) if prev_error_type != error_type
-          case error_type
-          when :invalid_owner then puts("#{inconsistencies} MISSING: #{meta.join(', ')}")
-          else puts(inconsistencies.to_s)
-          end
+          Reporter.print_delimiter_line(error_type) if prev_error_type != error_type
+          Reporter.print_error(error_type, inconsistencies, meta)
           error_type
         end
       end

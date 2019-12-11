@@ -3,19 +3,29 @@
 require 'codeowners/checker'
 
 RSpec.describe 'Interactive mode' do
-  it 'runs with no-issues reporting' do
-    start(
-      codeowners: ['lib/new_file.rb @mpospelov'],
-      owners: ['@mpospelov'],
-      file_tree: { 'lib/new_file.rb' => 'bar' }
-    ) do
-      expect_not_to_puts
-    end
+  subject(:runner) do
+    IntegrationTestRunner
+      .new(codeowners: codeowners, owners: owners, file_tree: file_tree)
+      .run
   end
 
-  it 'runs with missing_ref issue' do
-    start(file_tree: { 'lib/new_file.rb' => 'bar' }) do
-      expect_to_ask(<<~QUESTION)
+  let(:codeowners) { [] }
+  let(:owners) { [] }
+  let(:file_tree) { {} }
+
+  context 'when no issues' do
+    let(:codeowners) { ['lib/new_file.rb @mpospelov'] }
+    let(:owners) { ['@mpospelov'] }
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+
+    it { is_expected.to have_empty_report }
+  end
+
+  context 'when missing_ref issue' do
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+
+    it 'asks about missing owner file' do
+      expect(runner).to ask(<<~QUESTION)
         File added: "lib/new_file.rb". Add owner to the CODEOWNERS file?
         (y) yes
         (i) ignore
@@ -24,68 +34,32 @@ RSpec.describe 'Interactive mode' do
     end
   end
 
-  it 'runs with useless_pattern issue' do
-    start(
-      codeowners: ['lib/new_file.rb @mpospelov', 'liba/* @mpospelov'],
-      owners: ['@mpospelov'],
-      file_tree: { 'lib/new_file.rb' => 'bar' }
-    ) do
-      expect_to_ask(<<~QUESTION, limited_to: %w[i e d q])
+  context 'when useless_pattern issue' do
+    let(:codeowners) { ['lib/new_file.rb @mpospelov', 'liba/* @mpospelov'] }
+    let(:owners) { ['@mpospelov'] }
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+
+    it 'ask to edit useless paterns from codeowners' do
+      expect(runner).to ask(<<~QUESTION).limited_to(%w[i e d q])
         (e) edit the pattern
         (d) delete the pattern
         (i) ignore
         (q) quit and save
       QUESTION
     end
-  end
 
-  it 'runs with invalid_owner issue' do
-    start(
-      codeowners: ['lib/new_file.rb @foobar'],
-      owners: ['@mpospelov'],
-      file_tree: { 'lib/new_file.rb' => 'bar' }
-    ) do
-      expect_to_ask(<<~QUESTION)
-        Unknown owner: @foobar for pattern: lib/new_file.rb. Add owner to the OWNERS file?
-        (y) yes
-        (i) ignore owner in this session
-        (q) quit and save
-      QUESTION
-    end
-  end
+    context 'with fzf installed' do
+      def expect_to_run_fzf_suggestion(with_pattern:)
+        search_mock = instance_double('Codeowners::Cli::FilesFromFZFSearch')
+        expect(Codeowners::Cli::FilesFromFZFSearch).to receive(:new).with(with_pattern) { search_mock }
+        expect(search_mock).to receive(:pick_suggestions) { yield }
+      end
 
-  it 'runs with unrecognized_line issue' do
-    start(
-      codeowners: ['lib/new_file.rb @mpospelov', '@mpospelov'],
-      owners: ['@mpospelov'],
-      file_tree: { 'lib/new_file.rb' => 'bar' }
-    ) do
-      expect_to_ask(<<~QUESTION, limited_to: %w[y i d])
-        "@mpospelov" is in unrecognized format. Would you like to edit?
-        (y) yes
-        (i) ignore
-        (d) delete the line
-      QUESTION
-    end
-  end
+      before { allow(Codeowners::Cli::SuggestFileFromPattern).to receive(:installed_fzf?).and_return(true) }
 
-  context 'with fzf installed' do
-    def expect_to_run_fzf_suggestion(with_pattern:)
-      search_mock = instance_double('Codeowners::Cli::FilesFromFZFSearch')
-      expect(Codeowners::Cli::FilesFromFZFSearch).to receive(:new).with(with_pattern) { search_mock }
-      expect(search_mock).to receive(:pick_suggestions) { yield }
-    end
-
-    before { allow(Codeowners::Cli::SuggestFileFromPattern).to receive(:installed_fzf?).and_return(true) }
-
-    it 'runs with useless_pattern issue' do
-      start(
-        codeowners: ['lib/new_file.rb @mpospelov', 'liba/* @mpospelov'],
-        owners: ['@mpospelov'],
-        file_tree: { 'lib/new_file.rb' => 'bar' }
-      ) do
+      it 'ask to edit useless paterns with suggestion from codeowners' do
         expect_to_run_fzf_suggestion(with_pattern: 'liba/*') { 'lib/' }
-        expect_to_ask(<<~QUESTION, limited_to: %w[y i e d q])
+        expect(runner).to ask(<<~QUESTION).limited_to(%w[y i e d q])
           Replace with: "lib/"?
           (y) yes
           (i) ignore
@@ -94,6 +68,36 @@ RSpec.describe 'Interactive mode' do
           (q) quit and save
         QUESTION
       end
+    end
+  end
+
+  context 'when invalid_owner issue' do
+    let(:codeowners) { ['lib/new_file.rb @mpospelov @foobar'] }
+    let(:owners) { ['@mpospelov'] }
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+
+    it 'asks to add new owner to owners' do
+      expect(runner).to ask(<<~QUESTION)
+        Unknown owner: @foobar for pattern: lib/new_file.rb. Add owner to the OWNERS file?
+        (y) yes
+        (i) ignore owner in this session
+        (q) quit and save
+      QUESTION
+    end
+  end
+
+  context 'when unrecognized_line issue' do
+    let(:codeowners) { ['lib/new_file.rb @mpospelov', '@mpospelov'] }
+    let(:owners) { ['@mpospelov'] }
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+
+    it 'asks to edit or delete unrecognized lines' do
+      expect(runner).to ask(<<~QUESTION).limited_to(%w[y i d])
+        "@mpospelov" is in unrecognized format. Would you like to edit?
+        (y) yes
+        (i) ignore
+        (d) delete the line
+      QUESTION
     end
   end
 end
