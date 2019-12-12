@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../checker'
+require_relative '../reporter'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
@@ -23,11 +24,14 @@ module Codeowners
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
         checker = create_checker(repo)
-        if options[:interactive]
-          interactive_mode(checker)
-        else
-          report_inconsistencies(checker)
+        if checker.consistent?
+          Reporter.print '✅ File is consistent'
+          exit 0
         end
+
+        options[:interactive] ? interactive_mode(checker) : report_inconsistencies(checker)
+
+        exit(-1)
       end
 
       desc 'filter <by-owner>', 'List owners of changed files'
@@ -51,14 +55,8 @@ module Codeowners
       end
 
       def report_inconsistencies(checker)
-        if checker.consistent?
-          puts '✅ File is consistent'
-          exit 0
-        else
-          puts "File #{checker.codeowners.filename} is inconsistent:"
-          report_errors!(checker)
-          exit(-1)
-        end
+        Reporter.print "File #{checker.codeowners.filename} is inconsistent:"
+        report_errors!(checker)
       end
 
       def create_checker(repo)
@@ -69,18 +67,11 @@ module Codeowners
         checker
       end
 
-      LABELS = {
-        missing_ref: 'No owner defined',
-        useless_pattern: 'Useless patterns',
-        invalid_owner: 'Invalid owner',
-        unrecognized_line: 'Unrecognized line'
-      }.freeze
-
       def report_errors!(checker)
-        checker.fix!.each do |error_type, inconsistencies|
-          next if inconsistencies.empty?
-
-          puts LABELS[error_type], '-' * 30, inconsistencies, '-' * 30
+        checker.fix!.reduce(nil) do |prev_error_type, (error_type, inconsistencies, meta)|
+          Reporter.print_delimiter_line(error_type) if prev_error_type != error_type
+          Reporter.print_error(error_type, inconsistencies, meta)
+          error_type
         end
       end
     end

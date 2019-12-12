@@ -1,10 +1,9 @@
 # frozen_string_literal: true
 
-require 'fileutils'
 require 'codeowners/checker'
 
 RSpec.describe Codeowners::Checker do
-  subject { described_class.new(folder_name, from, to).fix! }
+  subject { described_class.new(folder_name, from, to).fix!.to_a }
 
   let(:folder_name) { 'project' }
   let(:from) { 'HEAD' }
@@ -112,7 +111,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   context 'without any changes it should not complain' do
-    it { is_expected.to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: []) }
+    it { is_expected.to eq([]) }
   end
 
   context 'when introducing a new file in the git tree' do
@@ -131,10 +130,7 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       it 'fails if the file is not referenced in .github/CODEOWNERS' do
-        expect(subject).to eq(missing_ref: ['lib/new_file.rb'],
-                              useless_pattern: [],
-                              unrecognized_line: [],
-                              invalid_owner: [])
+        expect(subject).to eq([[:missing_ref, 'lib/new_file.rb']])
       end
     end
 
@@ -158,7 +154,7 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       it 'does not list the files as missing reference' do
-        expect(subject).to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: [])
+        expect(subject).to eq([])
       end
     end
   end
@@ -176,7 +172,8 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'complains about invalid owner' do
-      expect(subject[:invalid_owner].first.owner).to eq('@toptal/owner4')
+      error_type, invalid_owner_checker = subject.first
+      expect([error_type, invalid_owner_checker.owner]).to eq([:invalid_owner, '@toptal/owner4'])
     end
 
     context 'when no-validateowners is used' do
@@ -187,7 +184,7 @@ RSpec.describe Codeowners::Checker do
       end
 
       it 'does not complain' do
-        expect(subject.fix!).to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: [])
+        expect(subject.fix!.to_a).to eq([])
       end
     end
   end
@@ -203,7 +200,8 @@ RSpec.describe Codeowners::Checker do
     end
 
     it "fails if referencing lines aren't removed from .github/CODEOWNERS" do
-      expect(subject[:useless_pattern].first.pattern).to eq('.rubocop.yml')
+      error_type, pattern_checker = subject.first
+      expect([error_type, pattern_checker.pattern]).to eq([:useless_pattern, '.rubocop.yml'])
     end
   end
 
@@ -232,7 +230,7 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'does not complain' do
-      expect(subject).to eq(missing_ref: [], useless_pattern: [], unrecognized_line: [], invalid_owner: [])
+      expect(subject).to eq([])
     end
   end
 
@@ -249,10 +247,8 @@ RSpec.describe Codeowners::Checker do
     end
 
     it 'complains about unrecognized line' do
-      expect(subject).to eq(missing_ref: [],
-                            useless_pattern: [],
-                            unrecognized_line: ['lib/shared/random.rb'],
-                            invalid_owner: [])
+      error_type, unrecognized_line_check = subject.first
+      expect([error_type, unrecognized_line_check.to_s]).to eq([:unrecognized_line, 'lib/shared/random.rb'])
     end
   end
 
@@ -276,6 +272,7 @@ RSpec.describe Codeowners::Checker do
       expect(subject.changes_with_ownership)
         .to eq('@owner' => [], '@owner2' => [], '@owner1' => [])
     end
+
     context 'when passing a specific owner' do
       it do
         expect(subject.changes_with_ownership('owner')).to be_empty

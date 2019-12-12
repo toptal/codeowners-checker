@@ -9,14 +9,10 @@ module Codeowners
     class CodeOwners
       include Enumerable
 
-      attr_reader :file_manager, :transform_line_procs
+      attr_reader :file_manager
 
-      def initialize(file_manager, transformers: nil)
+      def initialize(file_manager)
         @file_manager = file_manager
-        @transform_line_procs = [
-          method(:build_line),
-          *transformers
-        ]
       end
 
       def persist!
@@ -49,13 +45,7 @@ module Codeowners
       private
 
       def list
-        @list ||= begin
-          list = @file_manager.content
-          transform_line_procs.each do |transform_line_proc|
-            list = list.flat_map { |line| transform_line_proc.call(line) }.compact
-          end
-          list
-        end
+        @list ||= @file_manager.content.flat_map { |line| build_line(line) }.compact
       end
 
       def build_line(line)

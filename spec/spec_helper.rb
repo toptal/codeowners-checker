@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'pry'
+require 'fileutils'
 require 'simplecov'
 SimpleCov.start do
   add_filter 'spec'
@@ -7,6 +9,7 @@ end
 
 require 'bundler/setup'
 require 'codeowners/cli/main'
+require_relative 'support/integration_test_runner'
 
 Dir['lib/**/*.rb'].each { |file| require file[4..-1] }
 

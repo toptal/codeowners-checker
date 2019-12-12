@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'fileutils'
 require 'codeowners/checker/owners_list'
 
 RSpec.describe Codeowners::Checker::OwnersList do

@@ -15,7 +15,7 @@ module Codeowners
   # By default (:validate_owners property) it also reads OWNERS with list of all
   # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
-    attr_accessor :when_useless_pattern, :when_new_file, :owners_list
+    attr_reader :owners_list
 
     # Get repo metadata and compare with the owners
     def initialize(repo, from, to)
@@ -24,10 +24,6 @@ module Codeowners
       @from = from || 'HEAD'
       @to = to
       @owners_list = OwnersList.new(@repo_dir)
-    end
-
-    def transformers
-      @transformers ||= []
     end
 
     def changes_to_analyze
@@ -39,7 +35,7 @@ module Codeowners
     end
 
     def fix!
-      catch(:user_quit) { results }
+      Enumerator.new { |yielder| catch(:user_quit) { results.each { |r| yielder << r } } }
     end
 
     def changes_for_patterns(patterns)
@@ -68,18 +64,13 @@ module Codeowners
     end
 
     def useless_pattern
-      codeowners.select do |line|
-        next unless line.pattern?
-
-        unless pattern_has_files(line.pattern)
-          @when_useless_pattern&.call(line)
-          true
-        end
+      @useless_pattern ||= codeowners.select do |line|
+        line.pattern? && !pattern_has_files(line.pattern)
       end
     end
 
     def missing_reference
-      added_files.reject(&method(:defined_owner?))
+      @missing_reference ||= added_files.reject(&method(:defined_owner?))
     end
 
     def pattern_has_files(pattern)
@@ -93,14 +84,12 @@ module Codeowners
         return true if line.match_file?(file)
       end
 
-      @when_new_file&.call(file) if @when_new_file
       false
     end
 
     def codeowners
       @codeowners ||= CodeOwners.new(
-        FileAsArray.new(CodeOwners.filename(@repo_dir)),
-        transformers: transformers
+        FileAsArray.new(CodeOwners.filename(@repo_dir))
       )
     end
 
@@ -109,7 +98,7 @@ module Codeowners
     end
 
     def consistent?
-      results.values.all?(&:empty?)
+      results.none?
     end
 
     def commit_changes!
@@ -119,21 +108,22 @@ module Codeowners
     end
 
     def unrecognized_line
-      codeowners.map do |line|
-        line.to_file if line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
-      end.compact
+      @unrecognized_line ||= codeowners.select { |line| line.is_a?(Codeowners::Checker::Group::UnrecognizedLine) }
     end
 
     private
 
+    def invalid_owners
+      @invalid_owners ||= @owners_list.invalid_owner(codeowners)
+    end
+
     def results
-      @results ||=
-        {
-          missing_ref: missing_reference,
-          useless_pattern: useless_pattern,
-          invalid_owner: @owners_list.invalid_owner(@codeowners),
-          unrecognized_line: unrecognized_line
-        }
+      @results ||= Enumerator.new do |yielder|
+        missing_reference.each { |ref| yielder << [:missing_ref, ref] }
+        useless_pattern.each { |pattern| yielder << [:useless_pattern, pattern] }
+        invalid_owners.each { |(owner, missing)| yielder << [:invalid_owner, owner, missing] }
+        unrecognized_line.each { |line| yielder << [:unrecognized_line, line] }
+      end
     end
   end
 end
