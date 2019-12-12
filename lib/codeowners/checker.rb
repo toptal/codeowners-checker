@@ -35,7 +35,7 @@ module Codeowners
     end
 
     def fix!
-      catch(:user_quit) { results }
+      Enumerator.new { |yielder| catch(:user_quit) { results.each { |r| yielder << r } } }
     end
 
     def changes_for_patterns(patterns)
@@ -84,7 +84,6 @@ module Codeowners
         return true if line.match_file?(file)
       end
 
-      @when_new_file&.call(file) if @when_new_file
       false
     end
 

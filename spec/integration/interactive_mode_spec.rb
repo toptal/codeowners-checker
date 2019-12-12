@@ -5,13 +5,14 @@ require 'codeowners/checker'
 RSpec.describe 'Interactive mode' do
   subject(:runner) do
     IntegrationTestRunner
-      .new(codeowners: codeowners, owners: owners, file_tree: file_tree)
+      .new(codeowners: codeowners, owners: owners, file_tree: file_tree, answers: answers)
       .run
   end
 
   let(:codeowners) { [] }
   let(:owners) { [] }
   let(:file_tree) { {} }
+  let(:answers) { [] }
 
   context 'when no issues' do
     let(:codeowners) { ['lib/new_file.rb @mpospelov'] }
@@ -19,6 +20,20 @@ RSpec.describe 'Interactive mode' do
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
 
     it { is_expected.to have_empty_report }
+  end
+
+  context 'when user_quit is pressed' do
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+    let(:answers) { ['q'] }
+
+    it 'asks about missing owner file' do
+      expect(runner).to ask(<<~QUESTION)
+        File added: "lib/new_file.rb". Add owner to the CODEOWNERS file?
+        (y) yes
+        (i) ignore
+        (q) quit and save
+      QUESTION
+    end
   end
 
   context 'when missing_ref issue' do
