@@ -24,11 +24,14 @@ module Codeowners
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
         checker = create_checker(repo)
-        if options[:interactive]
-          interactive_mode(checker)
-        else
-          report_inconsistencies(checker)
+        if checker.consistent?
+          Reporter.print '✅ File is consistent'
+          exit 0
         end
+
+        options[:interactive] ? interactive_mode(checker) : report_inconsistencies(checker)
+
+        exit(-1)
       end
 
       desc 'filter <by-owner>', 'List owners of changed files'
@@ -52,14 +55,8 @@ module Codeowners
       end
 
       def report_inconsistencies(checker)
-        if checker.consistent?
-          Reporter.print '✅ File is consistent'
-          exit 0
-        else
-          Reporter.print "File #{checker.codeowners.filename} is inconsistent:"
-          report_errors!(checker)
-          exit(-1)
-        end
+        Reporter.print "File #{checker.codeowners.filename} is inconsistent:"
+        report_errors!(checker)
       end
 
       def create_checker(repo)

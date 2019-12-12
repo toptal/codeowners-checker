@@ -19,7 +19,7 @@ RSpec.describe 'Interactive mode' do
     let(:owners) { ['@mpospelov'] }
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
 
-    it { is_expected.to have_empty_report }
+    it { is_expected.to report_with('✅ File is consistent') }
   end
 
   context 'when user_quit is pressed' do

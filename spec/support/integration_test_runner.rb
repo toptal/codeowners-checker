@@ -84,7 +84,7 @@ class IntegrationTestRunner
   RSpec::Matchers.define :report_with do |*expected_reports|
     match do |result|
       IntegrationTestRunner.assert_matcher_input(result)
-      expected_reports.all? { |r| result.reports.include?(r) }
+      expected_reports.join("\n") == result.reports.join("\n")
     end
 
     failure_message do |actual|
@@ -111,10 +111,6 @@ class IntegrationTestRunner
         expected that the report will be empty, but it includes:
 
         #{actual.reports.map { |r| "- #{r}" }.join("\n")}
-
-        will include all of:
-
-        #{expected_reports.map { |r| "- #{r}" }.join("\n")}"
       MSG
     end
   end
