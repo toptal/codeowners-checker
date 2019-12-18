@@ -50,6 +50,18 @@ RSpec.describe Codeowners::Cli::Wizards::NewOwnerWizard do
 
         expect(choice).to eq([:rename, new_owner])
       end
+
+      context 'with owner without @' do
+        let(:new_owner) { 'owner' }
+
+        it 'returns :replace' do
+          allow(wizard).to receive(:ask).with('New owner: ').and_return(new_owner)
+          expect(owners_list).to receive(:valid_owner?).and_return(true)
+          choice = wizard.suggest_fixing(line, the_owner)
+
+          expect(choice).to eq([:rename, '@owner'])
+        end
+      end
     end
 
     context 'when the user chose to ignore' do

@@ -39,6 +39,7 @@ module Codeowners
           owner = nil
           loop do
             owner = ask('New owner: ')
+            owner = '@' + owner unless owner[0] == '@'
             break if @owners_list.valid_owner?(owner)
           end
           owner
