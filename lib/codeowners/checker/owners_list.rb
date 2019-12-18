@@ -54,6 +54,8 @@ module Codeowners
       end
 
       def <<(owner)
+        return if @owners.include?(owner)
+
         @owners << owner
       end
     end

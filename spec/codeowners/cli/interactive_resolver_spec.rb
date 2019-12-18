@@ -29,7 +29,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
 
     context 'when ignored some owners' do
       before do
-        allow(new_owner_wizard).to receive(:suggest_adding).and_return(:ignore)
+        allow(new_owner_wizard).to receive(:suggest_fixing).and_return(:ignore)
         resolver.handle_new_owners(Codeowners::Checker::Group::Pattern.new('pattern1 @ownerA'), ['@ownerA'])
         resolver.handle_new_owners(Codeowners::Checker::Group::Pattern.new('pattern2 @ownerB'), ['@ownerB'])
       end
@@ -164,13 +164,13 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
     let(:user_choice) { nil }
 
     before do
-      allow(new_owner_wizard).to receive(:suggest_adding).and_return(user_choice)
+      allow(new_owner_wizard).to receive(:suggest_fixing).and_return(user_choice)
     end
 
     it 'suggests to add it' do
       resolver.handle_new_owners(pattern, [owner])
 
-      expect(new_owner_wizard).to have_received(:suggest_adding).with(pattern, owner)
+      expect(new_owner_wizard).to have_received(:suggest_fixing).with(pattern, owner)
     end
 
     context 'when the user chose to add' do
@@ -186,6 +186,18 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
       end
     end
 
+    context 'when user chose to replace' do
+      let(:new_owner) { '@new_owner' }
+      let(:user_choice) { [:rename, new_owner] }
+
+      it 'adds it to owners list and marks changes' do
+        allow(owners_list).to receive(:<<)
+
+        expect { resolver.handle_new_owner(pattern, owner) }.to change(resolver, :made_changes?).to(true)
+        expect(owners_list).to have_received(:<<).with(new_owner)
+      end
+    end
+
     context 'when the user chose to ignore' do
       let(:user_choice) { :ignore }
 
@@ -193,7 +205,7 @@ RSpec.describe Codeowners::Cli::InteractiveResolver do
         resolver.handle_new_owners(pattern, [owner])
         resolver.handle_new_owners(another_pattern, [owner])
 
-        expect(new_owner_wizard).to have_received(:suggest_adding).once
+        expect(new_owner_wizard).to have_received(:suggest_fixing).once
         expect { resolver.print_epilogue }.to output(<<~OUTPUT).to_stdout
           Ignored owners:
            * @owner

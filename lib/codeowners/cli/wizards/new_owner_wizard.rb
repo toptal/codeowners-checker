@@ -10,9 +10,14 @@ module Codeowners
       class NewOwnerWizard
         include InteractiveOps
 
-        def suggest_adding(line, new_owner)
+        def initialize(owners_list)
+          @owners_list = owners_list
+        end
+
+        def suggest_fixing(line, new_owner)
           case prompt(line, new_owner)
           when 'y' then :add
+          when 'r' then [:rename, keep_asking_until_valid_owner]
           when 'i' then :ignore
           when 'q' then :quit
           end
@@ -21,12 +26,23 @@ module Codeowners
         private
 
         def prompt(line, new_owner)
-          ask(<<~QUESTION, limited_to: %w[y i q])
+          ask(<<~QUESTION, limited_to: %w[y r i q])
             Unknown owner: #{new_owner} for pattern: #{line.pattern}. Add owner to the OWNERS file?
             (y) yes
+            (r) rename owner
             (i) ignore owner in this session
             (q) quit and save
           QUESTION
+        end
+
+        def keep_asking_until_valid_owner
+          owner = nil
+          loop do
+            owner = ask('New owner: ')
+            owner = '@' + owner unless owner[0] == '@'
+            break if @owners_list.valid_owner?(owner)
+          end
+          owner
         end
       end
     end

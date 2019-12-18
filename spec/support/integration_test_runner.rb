@@ -3,6 +3,13 @@
 class IntegrationTestRunner
   include RSpec::Mocks::ExampleMethods
 
+  # Silence thor warnings while setting up io listeners
+  class CaptureIO < StringIO
+    def puts(text)
+      super unless text.start_with?('[WARNING] Attempted to create command')
+    end
+  end
+
   Result = Struct.new(:reports, :questions)
   PROJECT_PATH = File.join('tmp', 'test-project')
 
@@ -19,7 +26,9 @@ class IntegrationTestRunner
   # rubocop: disable Lint/HandleExceptions
   def run
     setup_project
+    $stdout = CaptureIO.new
     setup_io_listeners
+    $stdout = STDOUT
     begin
       Codeowners::Cli::Main.start(['check', PROJECT_PATH, *flags])
     rescue SystemExit
@@ -75,7 +84,11 @@ class IntegrationTestRunner
   def setup_io_listeners
     allow(Codeowners::Reporter).to receive(:print) { |*args| @reports << args }
     allow_any_instance_of(Thor).to receive(:ask) do |_, question, limited_to|
-      @questions << [question, limited_to]
+      @questions << [question, limited_to].compact
+      @answers.shift
+    end
+    allow_any_instance_of(Thor).to receive(:yes?) do |_, question|
+      @questions << [question]
       @answers.shift
     end
   end
@@ -118,8 +131,12 @@ class IntegrationTestRunner
   RSpec::Matchers.define :ask do |question|
     match do |result|
       IntegrationTestRunner.assert_matcher_input(result)
-      @limited_to ||= %w[y i q]
-      result.questions.include?([question, limited_to: @limited_to])
+
+      if @limited_to
+        result.questions.include?([question, limited_to: @limited_to])
+      else
+        result.questions.include?([question])
+      end
     end
 
     chain :limited_to do |limited_to|

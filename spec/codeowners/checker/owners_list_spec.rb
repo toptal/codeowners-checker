@@ -3,7 +3,7 @@
 require 'codeowners/checker/owners_list'
 
 RSpec.describe Codeowners::Checker::OwnersList do
-  subject { described_class.new(folder_name) }
+  subject(:owner_list) { described_class.new(folder_name) }
 
   let(:folder_name) { 'project' }
 
@@ -35,41 +35,50 @@ RSpec.describe Codeowners::Checker::OwnersList do
 
   describe '#valid_owner?' do
     before do
-      subject.owners
+      owner_list.owners
     end
 
     context 'when load OWNERS' do
       it 'validates owner from file' do
-        expect(subject).to be_valid_owner('@owner1')
-        expect(subject).not_to be_valid_owner('@unknown')
+        expect(owner_list).to be_valid_owner('@owner1')
+        expect(owner_list).not_to be_valid_owner('@unknown')
       end
     end
 
     context 'when skip owner validation' do
       before do
-        subject.validate_owners = false
+        owner_list.validate_owners = false
       end
 
       it 'returns true' do
-        expect(subject).to be_valid_owner('@unknown')
+        expect(owner_list).to be_valid_owner('@unknown')
       end
     end
   end
 
   describe '#persist!' do
     before do
-      subject.owners = []
+      owner_list.owners = []
     end
 
     context 'when new user is added to owners_list' do
       before do
-        subject.owners << '@new_owner'
-        subject.persist!
+        owner_list.owners << '@new_owner'
+        owner_list.persist!
       end
 
       it 'writes the user to OWNERS' do
         expect(File.read(subject.filename)).to eq("@new_owner\n")
       end
+    end
+  end
+
+  describe '#<<' do
+    it 'deduplicate owners' do
+      owner_list.owners = []
+      owner_list << '@new_owner'
+      owner_list << '@new_owner'
+      expect(owner_list.owners).to contain_exactly('@new_owner')
     end
   end
 end

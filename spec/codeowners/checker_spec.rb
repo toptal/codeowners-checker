@@ -8,7 +8,7 @@ RSpec.describe Codeowners::Checker do
   let(:folder_name) { 'project' }
   let(:from) { 'HEAD' }
   let(:to) { 'HEAD' }
-  let(:git) { Git.open(folder_name, log: Logger.new(STDOUT)) }
+  let(:git) { Git.open(folder_name, log: Logger.new(StringIO.new)) }
 
   ENV['GITHUB_TOKEN'] = nil
   ENV['GITHUB_ORGANIZATION'] = nil
