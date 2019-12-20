@@ -99,23 +99,44 @@ RSpec.describe 'Interactive mode' do
     let(:codeowners) { ['lib/new_file.rb @mpospelov @foobar'] }
     let(:owners) { ['@mpospelov'] }
     let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
-    let(:answers) { ['r', '@mpospelov', 'y'] }
+    let(:answers) { ['r', '@mpospelov', 'a'] }
 
     it 'asks to add new owner to owners' do
       question = <<~QUESTION
-        Unknown owner: @foobar for pattern: lib/new_file.rb. Add owner to the OWNERS file?
-        (y) yes
+        Unknown owner: @foobar for pattern: lib/new_file.rb. Choose an option:
+        (a) add a new owner
         (r) rename owner
         (i) ignore owner in this session
         (q) quit and save
       QUESTION
       expect(runner)
         .to ask(question)
-        .limited_to(%w[y r i q])
+        .limited_to(%w[a r i q])
         .and ask('New owner: ')
         .and ask('Commit changes?')
       expect(codeowners_file_body).to eq("lib/new_file.rb @mpospelov\n")
       expect(owners_file_body.scan('@mpospelov')).to contain_exactly('@mpospelov')
+    end
+
+    context 'when the owner`s name was misspelled' do
+      let(:owners) { %w[@mpospelov @foobaz] }
+      let(:answers) { ['y'] }
+
+      it 'asks to add new owner to owners' do
+        question = <<~QUESTION
+          Unknown owner: @foobar for pattern: lib/new_file.rb. Did you mean @foobaz?
+          (y) correct to @foobaz
+          (a) add a new owner
+          (r) rename owner
+          (i) ignore owner in this session
+          (q) quit and save
+        QUESTION
+        expect(runner)
+          .to ask(question)
+          .limited_to(%w[y a r i q])
+        expect(codeowners_file_body).to eq("lib/new_file.rb @mpospelov @foobaz\n")
+        expect(owners_file_body.scan('@foobaz')).to contain_exactly('@foobaz')
+      end
     end
   end
 

@@ -42,7 +42,7 @@ module Codeowners
         token && organization
       end
 
-      def invalid_owner(codeowners)
+      def invalid_owners(codeowners)
         return [] unless @validate_owners
 
         codeowners.each_with_object([]) do |line, acc|
