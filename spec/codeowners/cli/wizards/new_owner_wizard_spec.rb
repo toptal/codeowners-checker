@@ -2,7 +2,7 @@
 
 RSpec.describe Codeowners::Cli::Wizards::NewOwnerWizard do
   let(:wizard) { described_class.new(owners_list) }
-  let(:owners_list) { instance_double(Codeowners::Checker::OwnersList) }
+  let(:owners_list) { instance_double(Codeowners::Checker::OwnersList, owners: ['@foobaz']) }
 
   describe '#suggest_fixing' do
     let(:new_file) { 'text.rb' }
@@ -10,13 +10,13 @@ RSpec.describe Codeowners::Cli::Wizards::NewOwnerWizard do
     let(:line_str) { "#{new_file} #{the_owner}" }
     let(:line) { Codeowners::Checker::Group::Line.build(line_str) }
     let(:suggestion) { <<~QUESTION }
-      Unknown owner: #{the_owner} for pattern: #{new_file}. Add owner to the OWNERS file?
-      (y) yes
+      Unknown owner: #{the_owner} for pattern: #{new_file}. Choose an option:
+      (a) add a new owner
       (r) rename owner
       (i) ignore owner in this session
       (q) quit and save
     QUESTION
-    let(:suggestion_options) { %w[y r i q] }
+    let(:suggestion_options) { %w[a r i q] }
     let(:user_choice) { '' }
 
     before do
@@ -29,8 +29,19 @@ RSpec.describe Codeowners::Cli::Wizards::NewOwnerWizard do
       expect(wizard).to have_received(:ask).with(suggestion, limited_to: suggestion_options)
     end
 
-    context 'when the user chose to add' do
+    context 'when the user chose to autocorrect' do
+      let(:the_owner) { '@foobar' }
       let(:user_choice) { 'y' }
+
+      it 'returns :rename' do
+        choice = wizard.suggest_fixing(line, the_owner)
+
+        expect(choice).to eq([:rename, '@foobaz'])
+      end
+    end
+
+    context 'when the user chose to add' do
+      let(:user_choice) { 'a' }
 
       it 'returns :add' do
         choice = wizard.suggest_fixing(line, the_owner)
