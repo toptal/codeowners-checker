@@ -21,8 +21,8 @@ module Codeowners
 
       no_commands do
         def owners_from_github
-          organization = ENV['GITHUB_ORGANIZATION']
-          organization ||= ask(ASK_GITHUB_ORGANIZATION)
+          organization = config.default_organization
+          organization = ask(ASK_GITHUB_ORGANIZATION) if organization.empty?
           token = ENV['GITHUB_TOKEN']
           token ||= ask(ASK_GITHUB_TOKEN, echo: false)
           puts FETCH_OWNER_MESSAGE

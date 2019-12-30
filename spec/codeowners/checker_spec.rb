@@ -10,24 +10,16 @@ RSpec.describe Codeowners::Checker do
   let(:to) { 'HEAD' }
   let(:git) { Git.open(folder_name, log: Logger.new(StringIO.new)) }
 
-  ENV['GITHUB_TOKEN'] = nil
-  ENV['GITHUB_ORGANIZATION'] = nil
+  around { |example| with_env('GITHUB_TOKEN' => nil) }
 
   def setup_project_folder
-    on_project_folder do
+    on_dirpath(folder_name) do
       setup_code_owners
       setup_owners_list
       setup_billing_domain
       setup_shared_domain
       setup_gemfile
       setup_rubocop
-    end
-  end
-
-  def on_project_folder
-    Dir.mkdir(folder_name) unless Dir.exist?(folder_name)
-    Dir.chdir(folder_name) do
-      yield
     end
   end
 
@@ -44,18 +36,8 @@ RSpec.describe Codeowners::Checker do
     end
   end
 
-  def setup_owners_list
-    File.open('.github/OWNERS', 'w+') do |file|
-      file.puts <<~CONTENT
-        @owner
-        @owner1
-        @owner2
-      CONTENT
-    end
-  end
-
   def setup_billing_domain
-    FileUtils.mkdir_p('lib/billing')
+    create_dir('lib/billing')
     File.open('lib/billing/file.rb', 'w+') do |file|
       file.puts <<~CONTENT
         # TODO: something not useful here
@@ -64,7 +46,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   def setup_shared_domain
-    FileUtils.mkdir_p('lib/shared')
+    create_dir('lib/shared')
     File.open('lib/shared/file.rb', 'w+') do |file|
       file.puts <<~CONTENT
         # TODO: some file that multiple owners share
@@ -107,7 +89,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   after do
-    FileUtils.rm_r(folder_name)
+    remove_dir(folder_name)
   end
 
   context 'without any changes it should not complain' do
@@ -117,7 +99,7 @@ RSpec.describe Codeowners::Checker do
   context 'when introducing a new file in the git tree' do
     context 'when the file is not in the CODEOWNERS' do
       before do
-        on_project_folder do
+        on_dirpath(folder_name) do
           filename = 'lib/new_file.rb'
           File.open(filename, 'w+') do |file|
             file.puts '# add some ruby code here'
@@ -136,7 +118,7 @@ RSpec.describe Codeowners::Checker do
 
     context 'when the files are not in the CODEOWNERS but generic patterns are' do
       before do
-        on_project_folder do
+        on_dirpath(folder_name) do
           filename = 'lib/billing/new_file.rb'
           filename2 = 'app/file.js'
           Dir.mkdir('app')
@@ -161,7 +143,7 @@ RSpec.describe Codeowners::Checker do
 
   context 'when unknown owner is added to CODEOWNERS' do
     before do
-      on_project_folder do
+      on_dirpath(folder_name) do
         filename = 'lib/another_new_file.rb'
         File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
         File.open('.github/CODEOWNERS', 'a+') { |f| f.puts "#{filename} @toptal/owner4 @owner5" }
@@ -191,7 +173,7 @@ RSpec.describe Codeowners::Checker do
 
   context 'when removing a file from the git tree without updating CODEOWNERS' do
     before do
-      on_project_folder do
+      on_dirpath(folder_name) do
         filename = '.rubocop.yml'
         File.delete(filename)
         git.add filename
@@ -207,7 +189,7 @@ RSpec.describe Codeowners::Checker do
 
   context 'when removing a file from the git tree updating CODEOWNERS' do
     before do
-      on_project_folder do
+      on_dirpath(folder_name) do
         filename = '.rubocop.yml'
         File.delete(filename)
         git.add filename
@@ -236,7 +218,7 @@ RSpec.describe Codeowners::Checker do
 
   context 'when adding unrecognized line' do
     before do
-      on_project_folder do
+      on_dirpath(folder_name) do
         filename = 'lib/shared/random.rb'
         File.open(filename, 'w+') { |file| file.puts '# add some ruby code here' }
         File.open('.github/CODEOWNERS', 'a+') { |f| f.puts filename }
@@ -283,7 +265,7 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       before do
-        on_project_folder do
+        on_dirpath(folder_name) do
           filename = '.rubocop.yml'
           File.open(filename, 'a+') { |f| f.puts '# useless line' }
           git.add filename
@@ -300,7 +282,7 @@ RSpec.describe Codeowners::Checker do
       let(:from) { 'HEAD~1' }
 
       before do
-        on_project_folder do
+        on_dirpath(folder_name) do
           filename = 'lib/shared/file.rb'
           File.open(filename, 'a+') { |f| f.puts '# useless line' }
           git.add filename
@@ -331,7 +313,7 @@ RSpec.describe Codeowners::Checker do
     end
 
     context 'when the file is in the root folder' do
-      before { FileUtils.mv('project/.github/CODEOWNERS', 'project/CODEOWNERS') }
+      before { move_dir('project/.github/CODEOWNERS', 'project/CODEOWNERS') }
 
       it 'returns the content of the codeowners file' do
         expect(subject.codeowners.to_content).to eq(
@@ -342,7 +324,7 @@ RSpec.describe Codeowners::Checker do
     end
 
     context 'when the file does not exist' do
-      before { FileUtils.rm_f('project/.github/CODEOWNERS') }
+      before { remove_file('project/.github/CODEOWNERS') }
 
       it 'uses a root folder for the file and returns an empty array for the content' do
         expect(subject.codeowners.to_content).to eq([])

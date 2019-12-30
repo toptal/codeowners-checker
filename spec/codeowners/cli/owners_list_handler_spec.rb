@@ -7,12 +7,17 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
 
   let(:args) { [] }
   let(:options) { {} }
-  let(:git_config) { Codeowners::Config.new(fake_git) }
-  let(:fake_git) { double }
   let(:config) { { config: git_config } }
-  let(:owners_list) { double }
+  let(:git_config) { Codeowners::Config.new(fake_git) }
+  let(:fake_git) { instance_double('Git') }
+  let(:owners_list) { instance_double('String') }
   let(:repo) { '.' }
   let(:fetch) { cli.fetch(repo) }
+  let(:default_organization) { '' }
+
+  before do
+    allow(git_config).to receive(:default_organization).and_return(default_organization)
+  end
 
   describe '#fetch' do
     before do
@@ -20,25 +25,16 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
       allow(Codeowners::Checker::OwnersList).to receive(:persist!).and_return(owners_list)
     end
 
-    # stub ENV values according to examples and resets them after the test finishes
-    around do |example|
-      previous_org = ENV['GITHUB_ORGANIZATION']
-      previous_token = ENV['GITHUB_TOKEN']
-      ENV['GITHUB_ORGANIZATION'] = env_organization
-      ENV['GITHUB_TOKEN'] = env_token
-      example.run
-      ENV['GITHUB_ORGANIZATION'] = previous_org
-      ENV['GITHUB_TOKEN'] = previous_token
-    end
+    around { |example| with_env('GITHUB_TOKEN' => env_token) { example.run } }
 
     let(:output_message) { described_class::FETCH_OWNER_MESSAGE + "\n" }
 
     context 'with organization and token from ENV' do
-      let(:env_organization) { 'toptal' }
+      let(:default_organization) { 'toptal' }
       let(:env_token) { 'xxxsecretxxx' }
 
       it 'fetchs the owners from github' do
-        expect(Codeowners::GithubFetcher).to receive(:get_owners).with(env_organization, env_token)
+        expect(Codeowners::GithubFetcher).to receive(:get_owners).with(default_organization, env_token)
         fetch
       end
 
@@ -53,7 +49,6 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
     end
 
     context 'without organization' do
-      let(:env_organization) { nil }
       let(:env_token) { 'xxxsecretxxx' }
       let(:asked_message) { described_class::ASK_GITHUB_ORGANIZATION + ' ' }
       let(:asked_organization) { 'toptal' }
@@ -83,7 +78,7 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
     end
 
     context 'without token' do
-      let(:env_organization) { 'toptal' }
+      let(:default_organization) { 'toptal' }
       let(:env_token) { nil }
       let(:asked_message) { described_class::ASK_GITHUB_TOKEN + ' ' }
       let(:asked_token) { 'xxxsecretxxx' }
@@ -98,7 +93,7 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
       end
 
       it 'fetchs the owners from github' do
-        expect(Codeowners::GithubFetcher).to receive(:get_owners).with(env_organization, asked_token)
+        expect(Codeowners::GithubFetcher).to receive(:get_owners).with(default_organization, asked_token)
         fetch
       end
 

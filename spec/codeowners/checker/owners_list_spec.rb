@@ -3,34 +3,62 @@
 require 'codeowners/checker/owners_list'
 
 RSpec.describe Codeowners::Checker::OwnersList do
-  subject(:owner_list) { described_class.new(folder_name) }
+  subject(:owner_list) { described_class.new(folder_name, config) }
 
   let(:folder_name) { 'project' }
+  let(:config) { instance_double('Codeowners::Config') }
+  let(:env_token) { nil }
+  let(:default_organization) { '' }
 
-  ENV['GITHUB_TOKEN'] = nil
-  ENV['GITHUB_ORGANIZATION'] = nil
+  around { |example| with_env('GITHUB_TOKEN' => env_token) { example.run } }
 
   before do
-    on_project_folder do
-      File.open('OWNERS', 'w+') do |file|
-        file.puts <<~CONTENT
-          @owner
-          @owner1
-          @owner2
-        CONTENT
-      end
-    end
-  end
-
-  def on_project_folder
-    Dir.mkdir(folder_name) unless Dir.exist?(folder_name)
-    Dir.chdir(folder_name) do
-      yield
-    end
+    allow(config).to receive(:default_organization).and_return(default_organization)
+    on_dirpath(folder_name) { setup_owners_list('OWNERS') }
   end
 
   after do
-    FileUtils.rm_r(folder_name)
+    remove_dir(folder_name)
+  end
+
+  describe '#owners' do
+    let(:retrieved_owners) { ['@owner'] }
+
+    context 'with github credentials' do
+      let(:env_token) { 'some-token' }
+      let(:default_organization) { 'toptal' }
+
+      before do
+        allow(Codeowners::GithubFetcher).to receive(:get_owners).and_return(retrieved_owners)
+      end
+
+      it 'calls Codeowners::GithubFetcher.get_owners' do
+        expect(Codeowners::GithubFetcher).to receive(:get_owners).with(default_organization, env_token)
+        owner_list.owners
+      end
+
+      it 'returns the retrieved owners from github' do
+        expect(owner_list.owners).to eq(retrieved_owners)
+      end
+    end
+
+    context 'without github credentials' do
+      let(:file_array) { instance_double('Codeowners::Checker::FileAsArray') }
+
+      before do
+        allow(Codeowners::Checker::FileAsArray).to receive(:new).and_return(file_array)
+        allow(file_array).to receive(:content).and_return(retrieved_owners)
+      end
+
+      it 'calls Codeowners::Checker::FileAsArray.new.content' do
+        expect(file_array).to receive(:content)
+        owner_list.owners
+      end
+
+      it 'returns the retrieved owners from the file' do
+        expect(owner_list.owners).to eq(retrieved_owners)
+      end
+    end
   end
 
   describe '#valid_owner?' do
@@ -84,10 +112,10 @@ RSpec.describe Codeowners::Checker::OwnersList do
     end
 
     it 'initializes, adds owners and persists the changes' do
-      expect(described_class).to receive(:new).with(folder_name)
+      expect(described_class).to receive(:new).with(folder_name, config)
       expect(owner_list).to receive(:owners=).with(owners)
       expect(owner_list).to receive(:persist!).with(no_args)
-      described_class.persist!(folder_name, owners)
+      described_class.persist!(folder_name, owners, config)
     end
   end
 
