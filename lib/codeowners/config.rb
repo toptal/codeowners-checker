@@ -40,10 +40,34 @@ module Codeowners
       @git.config('user.owner', name)
     end
 
+    def default_organization
+      config_org = @git.config('user.organization')
+      return config_org.strip unless config_org.nil? || config_org.strip.empty?
+
+      parse_organization_from_origin
+    end
+
+    def default_organization=(name)
+      @git.config('user.organization', name)
+    end
+
     def to_h
       {
-        default_owner: default_owner
+        default_owner: default_owner,
+        default_organization: default_organization
       }
+    end
+
+    protected
+
+    def parse_organization_from_origin
+      origin_url = @git.config('remote.origin.url')
+      return '' if origin_url.nil? || origin_url.strip.empty?
+
+      org_regexp = origin_url.match(%r{:(?<org>.+?)/})
+      return '' if org_regexp.nil? || org_regexp[:org].strip.empty?
+
+      org_regexp[:org].strip
     end
   end
 end

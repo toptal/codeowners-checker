@@ -8,10 +8,10 @@ module Codeowners
     class Config < Base
       default_task :list
 
-      desc 'list', 'List the default owner configured in the config file'
+      desc 'list', 'List the default values configured in the config file'
       def list
         puts(config.to_h.map { |name, value| "#{name}: #{value.inspect}" })
-        help_stderr if config.default_owner.empty?
+        help_stderr if config.default_owner.empty? || config.default_organization.empty?
       end
 
       desc 'owner <name>', 'Configure a default owner name'
