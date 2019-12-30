@@ -8,22 +8,24 @@ module Codeowners
     class OwnersListHandler < Base
       default_task :fetch
 
+      FETCH_OWNER_MESSAGE = 'Fetching owners list from GitHub ...'
+      ASK_GITHUB_ORGANIZATION = 'GitHub organization (e.g. github): '
+      ASK_GITHUB_TOKEN = 'Enter GitHub token: '
+
       desc 'fetch [REPO]', 'Fetches .github/OWNERS based on github organization'
       def fetch(repo = '.')
         @repo = repo
         owners = owners_from_github
-        owners_list = Checker::OwnersList.new(repo)
-        owners_list.owners = owners
-        owners_list.persist!
+        Checker::OwnersList.persist!(repo, owners)
       end
 
       no_commands do
         def owners_from_github
           organization = ENV['GITHUB_ORGANIZATION']
-          organization ||= ask('GitHub organization (e.g. github): ')
+          organization ||= ask(ASK_GITHUB_ORGANIZATION)
           token = ENV['GITHUB_TOKEN']
-          token ||= ask('Enter GitHub token: ', echo: false)
-          puts 'Fetching owners list from GitHub ...'
+          token ||= ask(ASK_GITHUB_TOKEN, echo: false)
+          puts FETCH_OWNER_MESSAGE
           Codeowners::GithubFetcher.get_owners(organization, token)
         end
       end

@@ -15,6 +15,12 @@ module Codeowners
         @filename = CodeOwners.filename(repo).gsub('CODEOWNERS', 'OWNERS')
       end
 
+      def self.persist!(repo, owners)
+        owner_list = new(repo)
+        owner_list.owners = owners
+        owner_list.persist!
+      end
+
       def persist!
         owners_file = FileAsArray.new(@filename)
         owners_file.content = @owners

@@ -73,6 +73,24 @@ RSpec.describe Codeowners::Checker::OwnersList do
     end
   end
 
+  describe '.persist!' do
+    let(:owner_list) { instance_double(described_class.to_s) }
+    let(:owners) { '@owner' }
+
+    before do
+      allow(described_class).to receive(:new).and_return(owner_list)
+      allow(owner_list).to receive(:owners=).and_return(owners)
+      allow(owner_list).to receive(:persist!).and_return(owners)
+    end
+
+    it 'initializes, adds owners and persists the changes' do
+      expect(described_class).to receive(:new).with(folder_name)
+      expect(owner_list).to receive(:owners=).with(owners)
+      expect(owner_list).to receive(:persist!).with(no_args)
+      described_class.persist!(folder_name, owners)
+    end
+  end
+
   describe '#<<' do
     it 'deduplicate owners' do
       owner_list.owners = []
