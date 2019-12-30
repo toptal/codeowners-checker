@@ -44,7 +44,7 @@ module Codeowners
       config_org = @git.config('user.organization')
       return config_org.strip unless config_org.nil? || config_org.strip.empty?
 
-      parse_organization_from_origin
+      parse_organization_from_origin || ''
     end
 
     def default_organization=(name)
@@ -62,10 +62,10 @@ module Codeowners
 
     def parse_organization_from_origin
       origin_url = @git.config('remote.origin.url')
-      return '' if origin_url.nil? || origin_url.strip.empty?
+      return if origin_url.nil? || origin_url.strip.empty?
 
-      org_regexp = origin_url.match(%r{:(?<org>.+?)/})
-      return '' if org_regexp.nil? || org_regexp[:org].strip.empty?
+      org_regexp = origin_url.match(%r{^https?://.+?/(?<org>.+?)/|:(?<org>.+?)/})
+      return if org_regexp.nil? || org_regexp[:org].strip.empty?
 
       org_regexp[:org].strip
     end

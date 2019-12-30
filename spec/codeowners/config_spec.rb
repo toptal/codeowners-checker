@@ -69,6 +69,26 @@ RSpec.describe Codeowners::Config do
       end
     end
 
+    describe '#parse_organization_from_origin' do
+      before do
+        allow(fake_git).to receive('config').with('remote.origin.url').and_return(remote_url)
+      end
+
+      let(:parsed_org) { subject.send(:parse_organization_from_origin) }
+
+      context 'with git url' do
+        let(:remote_url) { 'git@github.com:toptal/codeowners-checker.git' }
+
+        it { expect(parsed_org).to eq('toptal') }
+      end
+
+      context 'with http url' do
+        let(:remote_url) { 'https://github.com/toptal/codeowners-checker.git' }
+
+        it { expect(parsed_org).to eq('toptal') }
+      end
+    end
+
     context 'with user.organization set' do
       before do
         allow(fake_git).to receive('config').with('user.organization').and_return('other-org')
