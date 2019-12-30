@@ -19,6 +19,12 @@ module Codeowners
         config.default_owner = name
         puts "Default owner configured to #{name}"
       end
+
+      desc 'organization <name>', 'Configure a default organization name'
+      def organization(name)
+        config.default_organization = name
+        puts "Default organization configured to #{name}"
+      end
     end
   end
 end

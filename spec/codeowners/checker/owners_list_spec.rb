@@ -10,9 +10,8 @@ RSpec.describe Codeowners::Checker::OwnersList do
   let(:env_token) { nil }
   let(:default_organization) { '' }
 
-  around { |example| with_env('GITHUB_TOKEN' => env_token) { example.run } }
-
   before do
+    ENV['GITHUB_TOKEN'] = env_token
     allow(config).to receive(:default_organization).and_return(default_organization)
     on_dirpath(folder_name) { setup_owners_list('OWNERS') }
   end

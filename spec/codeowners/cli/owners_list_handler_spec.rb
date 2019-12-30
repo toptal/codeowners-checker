@@ -21,11 +21,10 @@ RSpec.describe Codeowners::Cli::OwnersListHandler do
 
   describe '#fetch' do
     before do
+      ENV['GITHUB_TOKEN'] = env_token
       allow(Codeowners::GithubFetcher).to receive(:get_owners).and_return(owners_list)
       allow(Codeowners::Checker::OwnersList).to receive(:persist!).and_return(owners_list)
     end
-
-    around { |example| with_env('GITHUB_TOKEN' => env_token) { example.run } }
 
     let(:output_message) { described_class::FETCH_OWNER_MESSAGE + "\n" }
 

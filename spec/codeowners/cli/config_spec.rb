@@ -63,11 +63,37 @@ RSpec.describe Codeowners::Cli::Config do
   end
 
   describe '#owner' do
-    it 'config the owner in the git config file' do
-      expect(git_config).to receive(:default_owner=).with('@owner1')
+    let(:new_owner) { '@owner1' }
+
+    before do
+      allow(git_config).to receive(:default_owner=)
+    end
+
+    it 'changes the owner in the git config file' do
+      expect(git_config).to receive(:default_owner=).with(new_owner)
+      cli.owner(new_owner)
+    end
+
+    it 'outputs success message' do
       expect do
-        cli.owner('@owner1')
+        cli.owner(new_owner)
       end.to output("Default owner configured to @owner1\n").to_stdout
+    end
+  end
+
+  describe '#organization' do
+    let(:new_org) { '@new-org' }
+
+    it 'changes the organization in the git config file' do
+      expect(git_config).to receive(:default_organization=).with(new_org)
+      cli.organization(new_org)
+    end
+
+    it 'outputs success message' do
+      allow(git_config).to receive(:default_organization=)
+      expect do
+        cli.organization(new_org)
+      end.to output("Default organization configured to @new-org\n").to_stdout
     end
   end
 end

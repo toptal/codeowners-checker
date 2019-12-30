@@ -10,8 +10,6 @@ RSpec.describe Codeowners::Checker do
   let(:to) { 'HEAD' }
   let(:git) { Git.open(folder_name, log: Logger.new(StringIO.new)) }
 
-  around { |example| with_env('GITHUB_TOKEN' => nil) }
-
   def setup_project_folder
     on_dirpath(folder_name) do
       setup_code_owners

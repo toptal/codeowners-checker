@@ -3,21 +3,6 @@
 require 'fileutils'
 
 module Helpers
-  # stub ENV values according to examples and resets them after the test finishes
-  # this method should be used with an around block like so:
-  # around { |example| with_env('SOME' => 'VALUE') { example.run } }
-  def with_env(env)
-    previous_env = {}
-    env.each do |key, value|
-      previous_env[key] = ENV[key]
-      ENV[key] = value
-    end
-    yield
-    previous_env.each do |key, value|
-      ENV[key] = value
-    end
-  end
-
   # Move current dir to folder and creates it if it doesn't exists
   def on_dirpath(folder_name)
     Dir.mkdir(folder_name) unless Dir.exist?(folder_name)
