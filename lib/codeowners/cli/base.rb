@@ -3,6 +3,7 @@
 require 'thor'
 
 require_relative '../config'
+require_relative 'warner'
 
 module Codeowners
   module Cli
@@ -13,6 +14,7 @@ module Codeowners
       def initialize(args = [], options = {}, config = {})
         super
         @config ||= config[:config] || default_config
+        Warner.check_warnings
       end
 
       private

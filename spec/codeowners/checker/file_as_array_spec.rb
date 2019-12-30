@@ -10,7 +10,7 @@ RSpec.describe Codeowners::Checker::FileAsArray do
   let!(:tmp_dir) { Dir.mktmpdir }
   let(:file_path) { File.join(tmp_dir, 'test.txt') }
 
-  after { FileUtils.rm_rf(tmp_dir) }
+  after { remove_dir(tmp_dir) }
 
   describe '#content' do
     context 'when the file exist' do

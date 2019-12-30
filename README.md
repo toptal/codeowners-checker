@@ -33,7 +33,11 @@ Example OWNERS:
 GitHub credentials are taken from the following environment variables. You might want to put them into your .bashrc or equivalent:
 
     $ export GITHUB_TOKEN='your GitHub PAT' # your personal access token from GitHub
-    $ export GITHUB_ORGANIZATION='company' # name of your GitHub organization
+
+The Github organization used to retrieve the groups/teams is automatically set according to the git remote URL. You can check and change this value using:
+
+    $ codeowners-checker config list
+    $ codeowners-checker config organization <organization>
 
 You can generate your PAT in [Settings -> Developer settings -> Personal access tokens on GitHub](https://github.com/settings/tokens) and `read:org` scope is **required**.
 

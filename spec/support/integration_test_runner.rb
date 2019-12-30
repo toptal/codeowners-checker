@@ -1,7 +1,10 @@
 # frozen_string_literal: true
 
+require_relative 'helpers'
+
 class IntegrationTestRunner
   include RSpec::Mocks::ExampleMethods
+  include Helpers
 
   # Silence thor warnings while setting up io listeners
   class CaptureIO < StringIO
@@ -51,9 +54,8 @@ class IntegrationTestRunner
   # rubocop: disable Metrics/MethodLength
   def setup_project
     Dir.mkdir('tmp') unless Dir.exist?('tmp')
-    FileUtils.rm_r(PROJECT_PATH) if Dir.exist?(PROJECT_PATH)
-    Dir.mkdir(PROJECT_PATH)
-    Dir.chdir(PROJECT_PATH) do
+    remove_dir(PROJECT_PATH)
+    on_dirpath(PROJECT_PATH) do
       Git.init
       git = Git.open('.', logger: Logger.new(STDOUT))
       Dir.mkdir('.github')
@@ -74,7 +76,7 @@ class IntegrationTestRunner
       unless File.exist?(file_path)
         parts = file_path.split('/')
         dir_parts = parts[0..-2]
-        FileUtils.mkdir_p(File.join(*dir_parts)) unless dir_parts.empty?
+        create_dir(File.join(*dir_parts)) unless dir_parts.empty?
       end
       File.write(file_path, content)
     end
