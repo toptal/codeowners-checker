@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+# Pattern specification described by gitscm
+# https://git-scm.com/docs/gitignore
+
 require 'codeowners/checker/group/pattern'
 
 RSpec.describe Codeowners::Checker::Group::Pattern do
@@ -14,86 +17,149 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
   end
 
   describe '#match_file?' do
-    {
-      'directory/* @owner @owner2' => {
-        'file.rb' => false,
-        'directory/file.rb' => true,
-        'directory/subdirectory/file.rb' => false
-      },
-      '/dir/dir1/*file* @owner' => {
-        'dir/file.rb' => false,
-        'dir/dir1/file.rb' => true,
-        'dir/dir1/other_file.rb' => true,
-        'other/dir/dir1/other_file.rb' => false,
-        'dir/dir1/dir2/file.rb' => false
-      },
-      'dir/*/file.rb @owner' => {
-        'file.rb' => false,
-        'dir/file.rb' => false,
-        'dir/dir1/file.rb' => true,
-        'dir/dir1/dir2/file.rb' => false
-      },
-      'dir/** @owner' => {
-        'file.rb' => false,
-        'dir/file.rb' => true,
-        'dir/dir1/file.rb' => true,
-        'dir/dir1/dir2/file.rb' => true
-      },
-      'dir/**/file.rb @owner' => {
-        'dir/file.rb' => false,
-        'dir/dir1/file.rb' => true,
-        'dir/dir1/dir2/file.rb' => true
-      },
-      '?ile[a-z1-9].rb @owner' => {
-        'file.rb' => false,
-        'file1.rb' => true,
-        'file-a.rb' => false,
-        'other_file1.rb' => false
-      },
-      '**/dir/file.rb @owner' => {
-        'file.rb' => false,
-        'dir/file.rb' => false,
-        'dir1/dir/file.rb' => true,
-        'dir1/dir2/dir/file.rb' => true
-      },
-      '*.js @owner' => {
-        'file.rb' => false,
-        'file.js' => true,
-        'another_file.js' => true,
-        'dir/file.js' => false,
-        'dir/dir1/file.rb' => false,
-        'dir/dir1/file1.js' => false,
-        'dir/dir1/dir2/file.js' => false
-      },
-      '**.js @owner' => {
-        'file.rb' => false,
-        'dir/file.js' => true,
-        'dir/dir1/file.rb' => false,
-        'dir/dir1/file1.js' => true,
-        'dir/dir1/dir2/file.js' => true
-      },
-      '* @owner' => {
-        '.file.rb' => true,
-        'directory/.file.rb' => false,
-        'directory/subdirectory/file.rb' => false
-      },
-      '** @owner' => {
-        '.file.rb' => true,
-        'directory/.file.rb' => true,
-        'directory/subdirectory/file.rb' => true
-      }
-    }.each do |content, tests|
-      context "when the line is #{content.inspect}" do
-        let(:line) { content }
+    # An asterisk "*" matches anything except a slash. The character "?"
+    # matches any one character except "/". The range notation, e.g. [a-zA-Z],
+    # can be used to match one of the characters in a range.
+    # See fnmatch(3) and the FNM_PATHNAME flag for a more detailed description.
 
-        tests.each do |file, result|
-          if result
-            it { is_expected.to be_match_file(file) }
-          else
-            it { is_expected.not_to be_match_file(file) }
-          end
-        end
-      end
+    context 'with a single asterix' do
+      let(:line) { '* @owner' }
+
+      it { is_expected.to be_match_file('.file.rb') }
+      it { is_expected.to be_match_file('dir/.file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/file.rb') }
+    end
+
+    context 'with dir/* @owner @owner2' do
+      let(:line) { 'dir/* @owner @owner2' }
+
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.not_to be_match_file('dir/subdir/file.rb') }
+    end
+
+    context 'with dir/*/file.rb @owner' do
+      let(:line) { 'dir/*/file.rb @owner' }
+
+      it { is_expected.to be_match_file('dir/subdir/file.rb') }
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.not_to be_match_file('dir/file.rb') }
+      it { is_expected.not_to be_match_file('dir/subdir/after/file.rb') }
+    end
+
+    context 'with /dir/subdir/*file* @owner' do
+      let(:line) { '/dir/subdir/*file* @owner' }
+
+      it { is_expected.to be_match_file('dir/subdir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/other_file.rb') }
+      it { is_expected.not_to be_match_file('dir/file.rb') }
+      it { is_expected.not_to be_match_file('before/dir/subdir/other_file.rb') }
+      it { is_expected.not_to be_match_file('dir/subdir/after/file.rb') }
+    end
+
+    context 'with *.js @owner' do
+      let(:line) { '*.js @owner' }
+
+      it { is_expected.to be_match_file('file.js') }
+      it { is_expected.to be_match_file('dir/file.js') }
+      it { is_expected.to be_match_file('dir/subdir/other_file.js') }
+      it { is_expected.to be_match_file('dir/subdir/after/file.js') }
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.not_to be_match_file('dir/subdir/file.rb') }
+    end
+
+    context 'with ?ile[a-z1-9].rb @owner' do
+      let(:line) { '?ile[a-z1-9].rb @owner' }
+
+      it { is_expected.to be_match_file('file1.rb') }
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.not_to be_match_file('file-a.rb') }
+      it { is_expected.not_to be_match_file('other_file1.rb') }
+    end
+
+    context 'with dir/** @owner' do
+      let(:line) { 'dir/** @owner' }
+
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/after/file.rb') }
+    end
+
+    # Two consecutive asterisks ("**") in patterns matched against full
+    # pathname may have special meaning:
+
+    # A leading "**" followed by a slash means match in all directories.
+    # For example, "**/foo" matches file or directory "foo" anywhere, the
+    # same as pattern "foo". "**/foo/bar" matches file or directory "bar"
+    # anywhere that is directly under directory "foo".
+
+    context 'with **/dir/file.rb @owner' do
+      let(:line) { '**/dir/file.rb @owner' }
+
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.to be_match_file('before/dir/file.rb') }
+      it { is_expected.to be_match_file('root/before/dir/file.rb') }
+      it { is_expected.not_to be_match_file('file.rb') }
+    end
+
+    context 'with **.js @owner' do
+      let(:line) { '**.js @owner' }
+
+      it { is_expected.to be_match_file('dir/file.js') }
+      it { is_expected.to be_match_file('dir/subdir/other_file.js') }
+      it { is_expected.to be_match_file('dir/subdir/after/file.js') }
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.not_to be_match_file('dir/subdir/file.rb') }
+    end
+
+    context 'with ** @owner' do
+      let(:line) { '** @owner' }
+
+      it { is_expected.to be_match_file('.file.rb') }
+      it { is_expected.to be_match_file('directory/.file.rb') }
+      it { is_expected.to be_match_file('directory/subdirectory/file.rb') }
+    end
+
+    # A trailing "/**" matches everything inside. For example, "abc/**"
+    # matches all files inside directory "abc", relative to the location
+    # of the .gitignore file, with infinite depth.
+
+    context 'with dir/** @owner' do
+      let(:line) { 'dir/** @owner' }
+
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/file.js') }
+      it { is_expected.not_to be_match_file('file.rb') }
+      it { is_expected.not_to be_match_file('oher/file.rb') }
+    end
+
+    # A slash followed by two consecutive asterisks then a slash matches
+    # zero or more directories.
+    # For example, "a/**/b" matches "a/b", "a/x/b", "a/x/y/b" and so on.
+
+    context 'with dir/**/file.rb @owner' do
+      let(:line) { 'dir/**/file.rb @owner' }
+
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/after/file.rb') }
+    end
+
+    context 'with dir @owner' do
+      let(:line) { 'dir @owner' }
+
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.to be_match_file('dir/real_sub/file.rb') }
+      it { is_expected.not_to be_match_file('file.rb') }
+    end
+
+    context 'with dir/ @owner' do
+      let(:line) { 'dir/ @owner' }
+
+      it { is_expected.to be_match_file('dir/file.rb') }
+      it { is_expected.to be_match_file('dir/subdir/file.rb') }
+      it { is_expected.not_to be_match_file('file.rb') }
     end
   end
 
