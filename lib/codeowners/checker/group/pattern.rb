@@ -2,6 +2,7 @@
 
 require_relative 'line'
 require_relative '../owner'
+require 'pathspec'
 
 module Codeowners
   class Checker
@@ -10,7 +11,7 @@ module Codeowners
       # Parse the line into pattern, owners and whitespaces.
       class Pattern < Line
         attr_accessor :owners, :whitespace
-        attr_reader :pattern
+        attr_reader :pattern, :spec
 
         def self.match?(line)
           _pattern, *owners = line.split(/\s+/)
@@ -35,24 +36,18 @@ module Codeowners
         def parse(line)
           @pattern, *@owners = line.split(/\s+/)
           @whitespace = line.split('@').first.count(' ') - 1
+          @spec = parse_spec(@pattern)
         end
 
         def match_file?(file)
-          File.fnmatch(pattern.gsub(%r{^/}, ''), file, fn_options)
-        end
-
-        def fn_options
-          if pattern.include?('**')
-            File::FNM_DOTMATCH
-          else
-            File::FNM_DOTMATCH | File::FNM_PATHNAME
-          end
+          spec.match file
         end
 
         def pattern=(new_pattern)
           @whitespace += @pattern.size - new_pattern.size
           @whitespace = 1 if @whitespace < 1
 
+          @spec = parse_spec(new_pattern)
           @pattern = new_pattern
         end
 
@@ -67,6 +62,10 @@ module Codeowners
 
         def to_s
           to_file(preserve_whitespaces: false)
+        end
+
+        def parse_spec(pattern)
+          PathSpec.from_lines(pattern)
         end
       end
     end
