@@ -178,6 +178,8 @@ RSpec.describe Codeowners::Checker::Group::Pattern do
           pattern.pattern = 'pattern23456789'
         end.to change(pattern, :whitespace).from(5).to(1)
       end
+
+      it { expect(pattern.spec).not_to be_empty }
     end
   end
 

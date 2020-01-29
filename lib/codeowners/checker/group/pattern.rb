@@ -36,7 +36,7 @@ module Codeowners
         def parse(line)
           @pattern, *@owners = line.split(/\s+/)
           @whitespace = line.split('@').first.count(' ') - 1
-          @spec = PathSpec.from_lines(@pattern)
+          @spec = parse_spec(@pattern)
         end
 
         def match_file?(file)
@@ -47,6 +47,7 @@ module Codeowners
           @whitespace += @pattern.size - new_pattern.size
           @whitespace = 1 if @whitespace < 1
 
+          @spec = parse_spec(new_pattern)
           @pattern = new_pattern
         end
 
@@ -61,6 +62,10 @@ module Codeowners
 
         def to_s
           to_file(preserve_whitespaces: false)
+        end
+
+        def parse_spec(pattern)
+          PathSpec.from_lines(pattern)
         end
       end
     end
