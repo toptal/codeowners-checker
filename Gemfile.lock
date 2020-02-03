@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    codeowners-checker (1.1.0)
+    codeowners-checker (1.1.1)
       fuzzy_match (~> 2.1)
       git (~> 1.5)
       json (~> 2.1)
