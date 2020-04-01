@@ -7,6 +7,7 @@ require_relative 'checker/code_owners'
 require_relative 'checker/file_as_array'
 require_relative 'checker/group'
 require_relative 'checker/owners_list'
+require_relative 'checker/whitelist'
 
 module Codeowners
   # Check if code owners are consistent between a git repository and the CODEOWNERS file.
@@ -27,7 +28,7 @@ module Codeowners
     end
 
     def changes_to_analyze
-      @git.diff(@from, @to).name_status
+      @git.diff(@from, @to).name_status.reject(&whitelist)
     end
 
     def added_files
@@ -39,7 +40,7 @@ module Codeowners
     end
 
     def changes_for_patterns(patterns)
-      @git.diff(@from, @to).path(patterns).name_status.keys
+      @git.diff(@from, @to).path(patterns).name_status.keys.reject(&whitelist)
     end
 
     def patterns_by_owner
@@ -74,7 +75,7 @@ module Codeowners
     end
 
     def pattern_has_files(pattern)
-      @git.ls_files(pattern.gsub(%r{^/}, '')).any?
+      @git.ls_files(pattern.gsub(%r{^/}, '')).reject(&whitelist).any?
     end
 
     def defined_owner?(file)
@@ -85,6 +86,12 @@ module Codeowners
       end
 
       false
+    end
+
+    def whitelist
+      @whitelist ||= Whitelist.new(
+        CodeOwners.filename(@repo_dir) + '_WHITELIST'
+      )
     end
 
     def codeowners
@@ -108,7 +115,9 @@ module Codeowners
     end
 
     def unrecognized_line
-      @unrecognized_line ||= codeowners.select { |line| line.is_a?(Codeowners::Checker::Group::UnrecognizedLine) }
+      @unrecognized_line ||= codeowners.select do |line|
+        line.is_a?(Codeowners::Checker::Group::UnrecognizedLine)
+      end.reject(&whitelist)
     end
 
     private
