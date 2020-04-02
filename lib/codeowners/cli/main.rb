@@ -24,6 +24,9 @@ module Codeowners
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
         checker = create_checker(repo)
+        Warner.warn("No whitelist found at #{checker.whitelist_filename}") unless
+          checker.whitelist?
+
         if checker.consistent?
           Reporter.print '✅ File is consistent'
           exit 0

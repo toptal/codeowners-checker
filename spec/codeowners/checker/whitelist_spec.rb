@@ -42,4 +42,20 @@ RSpec.describe Codeowners::Checker::Whitelist do
       expect(['example.rb'].all?(&subject)).to be false
     end
   end
+
+  describe '#exists?' do
+    context 'when no whitelist file exists' do
+      let(:whitelist_filename) { 'does-not-exist' }
+
+      it 'returns false' do
+        expect(subject).not_to be_exist
+      end
+    end
+
+    context 'when the whitelist file exists' do
+      it 'returns true' do
+        expect(subject).to be_exist
+      end
+    end
+  end
 end

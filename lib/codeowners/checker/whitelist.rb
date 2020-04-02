@@ -10,6 +10,10 @@ module Codeowners
         @filename = filename
       end
 
+      def exist?
+        File.exist?(@filename)
+      end
+
       def whitelisted?(filename)
         pathspec.match(filename)
       end

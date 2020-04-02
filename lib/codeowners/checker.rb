@@ -88,10 +88,16 @@ module Codeowners
       false
     end
 
+    def whitelist?
+      whitelist.exist?
+    end
+
+    def whitelist_filename
+      @whitelist_filename ||= CodeOwners.filename(@repo_dir) + '_WHITELIST'
+    end
+
     def whitelist
-      @whitelist ||= Whitelist.new(
-        CodeOwners.filename(@repo_dir) + '_WHITELIST'
-      )
+      @whitelist ||= Whitelist.new(whitelist_filename)
     end
 
     def codeowners
