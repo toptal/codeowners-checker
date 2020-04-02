@@ -83,6 +83,7 @@ class IntegrationTestRunner
     end
   end
 
+  # rubocop: disable Metrics/AbcSize
   # rubocop: disable RSpec/AnyInstance
   def setup_io_listeners
     allow(Codeowners::Reporter).to receive(:print) { |*args| @reports << args }
@@ -97,6 +98,7 @@ class IntegrationTestRunner
     end
   end
   # rubocop: enable RSpec/AnyInstance
+  # rubocop: enable Metrics/AbcSize
 
   RSpec::Matchers.define :warn_with do |*expected_warnings|
     match do |result|
