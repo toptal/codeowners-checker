@@ -16,6 +16,7 @@ RSpec.describe Codeowners::Checker do
       setup_owners_list
       setup_billing_domain
       setup_shared_domain
+      setup_whitelist
       setup_gemfile
       setup_rubocop
     end
@@ -32,6 +33,16 @@ RSpec.describe Codeowners::Checker do
         lib/shared/* @owner2 @owner1
       CONTENT
     end
+  end
+
+  def setup_whitelist
+    File.open('.github/CODEOWNERS_WHITELIST', 'w+') do |file|
+      file.puts <<~CONTENT
+        # comment ignored
+        lib/whitelisted_file.rb
+      CONTENT
+    end
+    File.write('lib/whitelisted_file.rb', '# some ruby code here')
   end
 
   def setup_billing_domain
@@ -112,6 +123,12 @@ RSpec.describe Codeowners::Checker do
       it 'fails if the file is not referenced in .github/CODEOWNERS' do
         expect(subject).to eq([[:missing_ref, 'lib/new_file.rb']])
       end
+
+      context 'when the file is whitelisted' do
+        it 'does not fail' do
+          expect(subject).not_to include([:missing_ref, 'lib/whitelisted_file.rb'])
+        end
+      end
     end
 
     context 'when the files are not in the CODEOWNERS but generic patterns are' do
@@ -137,6 +154,21 @@ RSpec.describe Codeowners::Checker do
         expect(subject).to eq([])
       end
     end
+
+    context 'when a generic pattern is whitelisted' do
+      before do
+        on_dirpath(folder_name) do
+          File.write('.github/CODEOWNERS_WHITELIST', "**.md\n")
+          File.write('IGNORED_FILE.md', "# This file is ignored\n")
+          git.add 'IGNORED_FILE.md'
+          git.commit('Add markdown file')
+        end
+      end
+
+      it 'does not list the files as missing references' do
+        expect(subject).to eq([])
+      end
+    end
   end
 
   context 'when unknown owner is added to CODEOWNERS' do
@@ -154,6 +186,19 @@ RSpec.describe Codeowners::Checker do
     it 'complains about invalid owner' do
       error_type, invalid_owner_checker = subject.first
       expect([error_type, invalid_owner_checker.owner]).to eq([:invalid_owner, '@toptal/owner4'])
+    end
+
+    context 'when the file is whitelisted' do
+      before do
+        on_dirpath(folder_name) do
+          File.open('.github/CODEOWNERS', 'a+') { |f| f.puts 'lib/whitelisted_file.rb @owner5' }
+        end
+      end
+
+      it 'complains about a useless pattern' do
+        error_type, useless_pattern_checker = subject.first
+        expect([error_type, useless_pattern_checker.pattern]).to eq([:useless_pattern, 'lib/whitelisted_file.rb'])
+      end
     end
 
     context 'when no-validateowners is used' do
@@ -182,6 +227,23 @@ RSpec.describe Codeowners::Checker do
     it "fails if referencing lines aren't removed from .github/CODEOWNERS" do
       error_type, pattern_checker = subject.first
       expect([error_type, pattern_checker.pattern]).to eq([:useless_pattern, '.rubocop.yml'])
+    end
+
+    context 'when the file is whitelisted' do
+      before do
+        on_dirpath(folder_name) do
+          filename = 'lib/whitelisted_file.rb'
+          File.delete(filename)
+          git.add filename
+          git.commit('Deleted file lib/whitelisted_file.rb')
+        end
+      end
+
+      it 'does not fail' do
+        useless_pattern = match([:useless_pattern,
+                                 have_attributes(pattern: 'lib/whitelisted_file.rb')])
+        expect(subject).not_to contain_exactly(useless_pattern)
+      end
     end
   end
 
@@ -230,6 +292,21 @@ RSpec.describe Codeowners::Checker do
       error_type, unrecognized_line_check = subject.first
       expect([error_type, unrecognized_line_check.to_s]).to eq([:unrecognized_line, 'lib/shared/random.rb'])
     end
+
+    context 'when the line refers to a whitelisted file' do
+      before do
+        on_dirpath(folder_name) do
+          File.open('.github/CODEOWNERS_WHITELIST', 'a+') { |f| f.puts 'lib/shared/random.rb' }
+        end
+      end
+
+      it 'does not complain' do
+        unrecognized_line = match([:unrecognized_line,
+                                   have_attributes(to_s: 'lib/shared/random.rb')])
+
+        expect(subject).not_to contain_exactly(unrecognized_line)
+      end
+    end
   end
 
   describe '.patterns_by_owner' do
@@ -274,6 +351,13 @@ RSpec.describe Codeowners::Checker do
       it do
         expect(subject.changes_with_ownership('@owner')).to eq('@owner' => ['.rubocop.yml'])
       end
+
+      it 'ignores whitelisted files' do
+        on_dirpath(folder_name) do
+          File.open('.github/CODEOWNERS_WHITELIST', 'a+') { |f| f.puts '.rubocop.yml' }
+        end
+        expect(subject.changes_with_ownership('@owner')).not_to match('@owner' => include('.rubocop.yml'))
+      end
     end
 
     context 'when changing files from multiple owners' do
@@ -293,6 +377,20 @@ RSpec.describe Codeowners::Checker do
         expect(changes_from['@owner']).to eq('@owner' => [])
         expect(changes_from['@owner1']).to eq('@owner1' => ['lib/shared/file.rb'])
         expect(changes_from['@owner2']).to eq('@owner2' => ['lib/shared/file.rb'])
+      end
+
+      context 'when the file is whitelisted' do
+        before do
+          on_dirpath(folder_name) do
+            File.open('.github/CODEOWNERS_WHITELIST', 'a+') { |f| f.puts 'lib/shared/file.rb' }
+          end
+        end
+
+        it 'does not report changes' do
+          owners = %w[@owner @owner1 @owner2]
+          changes = owners.map { |o| subject.changes_with_ownership(o).values }
+          expect(changes.flatten).to be_empty
+        end
       end
     end
   end

@@ -13,6 +13,20 @@ RSpec.describe 'Report mode' do
   let(:owners) { [] }
   let(:file_tree) { {} }
 
+  context 'when no whitelist exists' do
+    let(:file_tree) { { 'lib/new_file.rb' => 'bar' } }
+
+    it { is_expected.to warn_with('No whitelist found at tmp/test-project/.github/CODEOWNERS_WHITELIST') }
+  end
+
+  context 'when a whitelist exists' do
+    let(:file_tree) { { '.github/CODEOWNERS_WHITELIST' => '# ignore files here' } }
+
+    it 'does not warn about a whitelist' do
+      expect(runner).not_to warn_with('No whitelist found at tmp/test-project/.github/CODEOWNERS_WHITELIST')
+    end
+  end
+
   context 'when no issues' do
     let(:codeowners) { ['lib/new_file.rb @mpospelov'] }
     let(:owners) { ['@mpospelov'] }

@@ -13,7 +13,7 @@ class IntegrationTestRunner
     end
   end
 
-  Result = Struct.new(:reports, :questions)
+  Result = Struct.new(:reports, :warnings, :questions)
   PROJECT_PATH = File.join('tmp', 'test-project')
 
   def initialize(codeowners: [], owners: [], file_tree: {}, flags: [], answers: [])
@@ -23,6 +23,7 @@ class IntegrationTestRunner
     @flags = flags.tap { |f| f.push('--from=HEAD~1') }
     @answers = answers
     @reports = []
+    @warnings = []
     @questions = []
   end
 
@@ -36,7 +37,7 @@ class IntegrationTestRunner
       Codeowners::Cli::Main.start(['check', PROJECT_PATH, *flags])
     rescue SystemExit
     end
-    Result.new(@reports.flatten, @questions)
+    Result.new(@reports.flatten, @warnings, @questions)
   end
   # rubocop: enable Lint/HandleExceptions
 
@@ -82,9 +83,11 @@ class IntegrationTestRunner
     end
   end
 
+  # rubocop: disable Metrics/AbcSize
   # rubocop: disable RSpec/AnyInstance
   def setup_io_listeners
     allow(Codeowners::Reporter).to receive(:print) { |*args| @reports << args }
+    allow(Codeowners::Cli::Warner).to receive(:warn) { |msg| @warnings << msg }
     allow_any_instance_of(Thor).to receive(:ask) do |_, question, limited_to|
       @questions << [question, limited_to].compact
       @answers.shift
@@ -95,6 +98,26 @@ class IntegrationTestRunner
     end
   end
   # rubocop: enable RSpec/AnyInstance
+  # rubocop: enable Metrics/AbcSize
+
+  RSpec::Matchers.define :warn_with do |*expected_warnings|
+    match do |result|
+      IntegrationTestRunner.assert_matcher_input(result)
+      expected_warnings.join("\n") == result.warnings.join("\n")
+    end
+
+    failure_message do |actual|
+      <<~MSG
+        expected that the warnings:
+
+        #{actual.warnings.map { |w| "- #{w}" }.join("\n")}
+
+        will include all of:
+
+        #{expected_warnings.map { |w| "- #{w}" }.join("\n")}
+      MSG
+    end
+  end
 
   RSpec::Matchers.define :report_with do |*expected_reports|
     match do |result|
