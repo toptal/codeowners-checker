@@ -17,9 +17,11 @@ between two git revisions.
 
 It will configure `@owner` as the default owner in the config file.
 
-If you are just starting to use `codeowners-checker` in your project, you might not have clear ownership defined for all parts of the code.  In this case using the checker would be very tedious in the beginning, as it prompts for ownership rules for all files.
+#### Whitelist
 
-You can still use `codeowners-checker` in this case without the tedium by providing a whitelist.  The whitelist contains patterns to ignore when checking files.
+If you are just starting to use `codeowners-checker` in your project, you might not have clear ownership defined for all parts of the code. In this case using the checker would be very tedious in the beginning, as it prompts for ownership rules for all files.
+
+You can still use `codeowners-checker` in this case without the tedium by providing a whitelist. The whitelist contains patterns to ignore when checking files.
 
 Just place a file called `CODEOWNERS_WHITELIST` next to your `CODEOWNERS` file to enable the whitelist.
 
