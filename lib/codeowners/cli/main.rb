@@ -47,12 +47,14 @@ module Codeowners
           checker
           .main_group
           .select { |item| item.instance_of?(Codeowners::Checker::Group::Pattern) }
-          .group_by { |pattern| pattern.owners.sort }
+          .each{|pattern| pattern.owners = pattern.owners.sort}
+          .uniq {|pattern| [pattern.pattern, *pattern.owners]}
+          .group_by { |pattern| pattern.owners }
           .sort_by { |owners, _patterns| owners }
           .map do |owners, patterns|
             [
               "# Owned by #{owners.join(' ')}",
-              *patterns.sort_by(&:pattern).each{|p| p.owners.sort! }.map(&:to_s)
+              *patterns.sort_by(&:pattern).map(&:to_s)
             ].join("\n")
           end
           .join("\n\n")

@@ -63,4 +63,18 @@ RSpec.describe 'Report mode' do
       ].join("\n"))
     end
   end
+
+  context 'when a file has a full duplicate entry' do
+    let(:codeowners) { ['file @owner', 'file @owner'] }
+    let(:owners) { ['@owner'] }
+    let(:file_tree) { { 'file' => 'file'} }
+
+    it 'rewrites codeowner with correct order' do
+      expect(runner).to report_with('✅ File is consistent')
+      expect(codeowners_file_body.strip).to eq([
+        '# Owned by @owner',
+        'file @owner'
+      ].join("\n"))
+    end
+  end
 end
