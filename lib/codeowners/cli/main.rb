@@ -37,6 +37,37 @@ module Codeowners
         exit(-1)
       end
 
+      desc 'cleanup REPO', 'Automatically fixes some issues and rewrite .github/CODEOWNERS in a specific order'
+      def cleanup(repo = '.')
+        checker = create_checker(repo)
+        Warner.warn("No whitelist found at #{checker.whitelist_filename}") unless
+          checker.whitelist?
+
+        new_file_lines =
+          checker
+          .main_group
+          .select { |item| item.instance_of?(Codeowners::Checker::Group::Pattern) }
+          .group_by { |pattern| pattern.owners.sort }
+          .sort_by { |owners, _patterns| owners }
+          .map do |owners, patterns|
+            [
+              "# Owned by #{owners.join(' ')}",
+              *patterns.sort_by(&:pattern).map(&:to_s)
+            ].join("\n")
+          end
+          .join("\n\n")
+
+        checker.codeowners.file_manager.content = new_file_lines
+        checker.codeowners.file_manager.persist!
+
+        if checker.consistent?
+          Reporter.print '✅ File is consistent'
+          exit 0
+        end
+
+        exit(-1)
+      end
+
       desc 'filter <by-owner>', 'List owners of changed files'
       subcommand 'filter', Codeowners::Cli::Filter
 

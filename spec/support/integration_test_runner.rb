@@ -28,13 +28,13 @@ class IntegrationTestRunner
   end
 
   # rubocop: disable Lint/HandleExceptions
-  def run
+  def run(command: 'check', flags: @flags)
     setup_project
     $stdout = CaptureIO.new
     setup_io_listeners
     $stdout = STDOUT
     begin
-      Codeowners::Cli::Main.start(['check', PROJECT_PATH, *flags])
+      Codeowners::Cli::Main.start([command, PROJECT_PATH, *flags])
     rescue SystemExit
     end
     Result.new(@reports.flatten, @warnings, @questions)
