@@ -52,7 +52,7 @@ module Codeowners
           .map do |owners, patterns|
             [
               "# Owned by #{owners.join(' ')}",
-              *patterns.sort_by(&:pattern).map(&:to_s)
+              *patterns.sort_by(&:pattern).each{|p| p.owners.sort! }.map(&:to_s)
             ].join("\n")
           end
           .join("\n\n")

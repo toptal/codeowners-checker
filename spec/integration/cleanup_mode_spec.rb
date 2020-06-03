@@ -49,4 +49,18 @@ RSpec.describe 'Report mode' do
       ].join("\n"))
     end
   end
+
+  context 'when a file has multiple owners' do
+    let(:codeowners) { ['file @owner_b @owner_a'] }
+    let(:owners) { ['@owner_a', '@owner_b'] }
+    let(:file_tree) { { 'file' => 'file'} }
+
+    it 'rewrites codeowner with correct order' do
+      expect(runner).to report_with('✅ File is consistent')
+      expect(codeowners_file_body.strip).to eq([
+        '# Owned by @owner_a @owner_b',
+        'file @owner_a @owner_b'
+      ].join("\n"))
+    end
+  end
 end
