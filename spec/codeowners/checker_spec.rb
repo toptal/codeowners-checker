@@ -439,4 +439,20 @@ RSpec.describe Codeowners::Checker do
       expect(subject.main_group).to be_a(Codeowners::Checker::Group)
     end
   end
+
+  describe '#list_files_for_owner' do
+    subject { described_class.new folder_name, from, to }
+
+    it 'does stuff' do
+      expect(subject.list_files_for_owner('@owner1')).to eq(
+        'Gemfile' => ['Gemfile'],
+        'lib/shared/*' => ['lib/shared/file.rb']
+      )
+    end
+
+    it 'returns empty results when the owner has no patterns' do
+      expect(subject.list_files_for_owner('@unknown_owner42')).to eq({})
+      expect(subject.list_files_for_owner(nil)).to eq({})
+    end
+  end
 end

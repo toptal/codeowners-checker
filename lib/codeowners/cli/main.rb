@@ -5,6 +5,7 @@ require_relative '../reporter'
 require_relative 'base'
 require_relative 'config'
 require_relative 'filter'
+require_relative 'list'
 require_relative 'owners_list_handler'
 require_relative '../github_fetcher'
 require_relative 'suggest_file_from_pattern'
@@ -39,6 +40,9 @@ module Codeowners
 
       desc 'filter <by-owner>', 'List owners of changed files'
       subcommand 'filter', Codeowners::Cli::Filter
+
+      desc 'list <by-owner>', 'List files owned by the given owner'
+      subcommand 'list', Codeowners::Cli::List
 
       desc 'config', 'Checks config is consistent or configure it'
       subcommand 'config', Codeowners::Cli::Config
