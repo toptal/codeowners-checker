@@ -94,4 +94,18 @@ RSpec.describe 'Report mode' do
       ].join("\n"))
     end
   end
+
+  context 'when a file has the same owner twice' do
+    let(:codeowners) { ['file @owner @owner'] }
+    let(:owners) { ['@owner'] }
+    let(:file_tree) { { 'file' => 'file' } }
+
+    it 'rewrites codeowner with correct order' do
+      expect(runner).to report_with('CODEOWNERS was rewritten')
+      expect(codeowners_file_body.strip).to eq([
+        '# Owned by @owner',
+        'file @owner'
+      ].join("\n"))
+    end
+  end
 end

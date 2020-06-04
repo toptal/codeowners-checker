@@ -54,7 +54,7 @@ module Codeowners
 
     def normalized_line(line)
       line = line.clone
-      line.owners = line.owners.sort
+      line.owners = line.owners.uniq.sort
       line
     end
 
