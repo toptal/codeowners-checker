@@ -443,7 +443,7 @@ RSpec.describe Codeowners::Checker do
   describe '#list_files_for_owner' do
     subject { described_class.new folder_name, from, to }
 
-    it 'does stuff' do
+    it 'filter files by owner' do
       expect(subject.list_files_for_owner('@owner1')).to eq(
         'Gemfile' => ['Gemfile'],
         'lib/shared/*' => ['lib/shared/file.rb']
