@@ -16,6 +16,16 @@ module Codeowners
       @filename = Checker::CodeOwners.filename(repo)
     end
 
+    # Performs the cleanup, rewriting the CODEOWNERS file
+    #
+    # It runs the following changes:
+    # - "Normalizes" everyline by removing duplicate owners and sorting them
+    # - Removes duplicated lines (only full duplicates)
+    # - Removes lines without any matching files
+    #
+    # After these steps are done, it:
+    # - Groups the lines by owners
+    # - Writes them to the CODEOWNERS file with a comment about the owners
     def clean!
       patterns =
         extract_patterns
