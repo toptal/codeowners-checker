@@ -20,6 +20,10 @@ module Codeowners
       option :interactive, default: true, type: :boolean, aliases: '-i'
       option :validateowners, default: true, type: :boolean, aliases: '-v'
       option :autocommit, default: false, type: :boolean, aliases: '-c'
+      option :check_unrecognized_line, default: true, type: :boolean
+      option :check_useless_pattern, default: true, type: :boolean
+      option :check_missing_ref, default: true, type: :boolean
+      option :check_invalid_owner, default: true, type: :boolean
       desc 'check REPO', 'Checks .github/CODEOWNERS consistency'
       # for pre-commit: --from HEAD --to index
       def check(repo = '.')
@@ -65,7 +69,8 @@ module Codeowners
       def create_checker(repo)
         from = options[:from]
         to = options[:to] != 'index' ? options[:to] : nil
-        checker = Codeowners::Checker.new(repo, from, to)
+        checks = Codeowners::Checker::ALL_CHECKS.select { |check| options[:"check_#{check}"] }
+        checker = Codeowners::Checker.new(repo, from, to, checks)
         checker.owners_list.validate_owners = options[:validateowners]
         checker
       end
