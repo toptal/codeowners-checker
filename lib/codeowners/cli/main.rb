@@ -70,7 +70,7 @@ module Codeowners
         from = options[:from]
         to = options[:to] != 'index' ? options[:to] : nil
         checks = Codeowners::Checker::ALL_CHECKS.select { |check| options[:"check_#{check}"] }
-        checker = Codeowners::Checker.new(repo, from, to, checks)
+        checker = Codeowners::Checker.new(repo: repo, from: from, to: to, checks: checks)
         checker.owners_list.validate_owners = options[:validateowners]
         checker
       end

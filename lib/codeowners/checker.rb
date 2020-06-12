@@ -21,13 +21,13 @@ module Codeowners
     ALL_CHECKS = %i[missing_ref useless_pattern invalid_owner unrecognized_line].freeze
 
     # Get repo metadata and compare with the owners
-    def initialize(repo, from, to, enabled_checks = ALL_CHECKS)
+    def initialize(repo:, from:, to:, checks: ALL_CHECKS)
       @git = Git.open(repo, log: Logger.new(IO::NULL))
       @repo_dir = repo
       @from = from || 'HEAD'
       @to = to
       @owners_list = OwnersList.new(@repo_dir)
-      @enabled_checks = enabled_checks
+      @enabled_checks = checks
     end
 
     def changes_to_analyze

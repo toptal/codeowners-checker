@@ -56,7 +56,7 @@ module Codeowners
       attr_reader :checker
 
       def default_checker
-        Codeowners::Checker.new(@repo_base_path, options[:from], options[:to])
+        Codeowners::Checker.new(repo: @repo_base_path, from: options[:from], to: options[:to])
       end
     end
   end
