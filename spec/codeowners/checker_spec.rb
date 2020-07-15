@@ -3,7 +3,7 @@
 require 'codeowners/checker'
 
 RSpec.describe Codeowners::Checker do
-  subject { described_class.new(folder_name, from, to).fix!.to_a }
+  subject { described_class.new(repo: folder_name, from: from, to: to).fix!.to_a }
 
   let(:folder_name) { 'project' }
   let(:from) { 'HEAD' }
@@ -202,7 +202,7 @@ RSpec.describe Codeowners::Checker do
     end
 
     context 'when no-validateowners is used' do
-      subject { described_class.new folder_name, from, to }
+      subject { described_class.new(repo: folder_name, from: from, to: to) }
 
       before do
         subject.owners_list.validate_owners = false
@@ -310,7 +310,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   describe '.patterns_by_owner' do
-    subject { described_class.new folder_name, from, to }
+    subject { described_class.new(repo: folder_name, from: from, to: to) }
 
     it 'collets patterns grouped by owner' do
       expect(subject.patterns_by_owner)
@@ -323,7 +323,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   describe '.changes_with_ownership' do
-    subject { described_class.new folder_name, from, to }
+    subject { described_class.new(repo: folder_name, from: from, to: to) }
 
     it 'collets changes from a specific owner' do
       expect(subject.changes_with_ownership)
@@ -396,7 +396,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   describe '#codeowners' do
-    subject { described_class.new(folder_name, from, to) }
+    subject { described_class.new(repo: folder_name, from: from, to: to) }
 
     context 'when the file is in the .github folder' do
       it 'returns the content of the codeowners file' do
@@ -429,7 +429,7 @@ RSpec.describe Codeowners::Checker do
   end
 
   describe '#main_group' do
-    subject { described_class.new(folder_name, from, to) }
+    subject { described_class.new(repo: folder_name, from: from, to: to) }
 
     it 'returns an array containing the main group' do
       expect(subject.main_group.to_content).to eq(

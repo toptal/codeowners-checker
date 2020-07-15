@@ -16,15 +16,18 @@ module Codeowners
   # By default (:validate_owners property) it also reads OWNERS with list of all
   # possible/valid owners and validates every owner in CODEOWNERS is defined in OWNERS
   class Checker
-    attr_reader :owners_list
+    attr_reader :owners_list, :enabled_checks
+
+    ALL_CHECKS = %i[missing_ref useless_pattern invalid_owner unrecognized_line].freeze
 
     # Get repo metadata and compare with the owners
-    def initialize(repo, from, to)
+    def initialize(repo:, from:, to:, checks: ALL_CHECKS)
       @git = Git.open(repo, log: Logger.new(IO::NULL))
       @repo_dir = repo
       @from = from || 'HEAD'
       @to = to
       @owners_list = OwnersList.new(@repo_dir)
+      @enabled_checks = checks
     end
 
     def changes_to_analyze
@@ -134,10 +137,22 @@ module Codeowners
 
     def results
       @results ||= Enumerator.new do |yielder|
-        missing_reference.each { |ref| yielder << [:missing_ref, ref] }
-        useless_pattern.each { |pattern| yielder << [:useless_pattern, pattern] }
-        invalid_owners.each { |(owner, missing)| yielder << [:invalid_owner, owner, missing] }
-        unrecognized_line.each { |line| yielder << [:unrecognized_line, line] }
+        enabled_checks.each do |check|
+          check_results(check).each { |result| yielder << result }
+        end
+      end
+    end
+
+    def check_results(check)
+      case check
+      when :missing_ref
+        missing_reference.map { |ref| [:missing_ref, ref] }
+      when :useless_pattern
+        useless_pattern.map { |pattern| [:useless_pattern, pattern] }
+      when :invalid_owner
+        invalid_owners.map { |(owner, missing)| [:invalid_owner, owner, missing] }
+      when :unrecognized_line
+        unrecognized_line.map { |line| [:unrecognized_line, line] }
       end
     end
   end
