@@ -67,6 +67,13 @@ module Codeowners
       end
     end
 
+    def list_files_for_owner(owner = '')
+      patterns = patterns_by_owner[owner]
+      patterns.each_with_object({}) do |pattern, results|
+        results[pattern] = files_for_pattern(pattern).map(&:first)
+      end
+    end
+
     def useless_pattern
       @useless_pattern ||= codeowners.select do |line|
         line.pattern? && !pattern_has_files(line.pattern)
@@ -77,8 +84,12 @@ module Codeowners
       @missing_reference ||= added_files.reject(&method(:defined_owner?))
     end
 
+    def files_for_pattern(pattern)
+      @git.ls_files(pattern.gsub(%r{^/}, '')).reject(&whitelist)
+    end
+
     def pattern_has_files(pattern)
-      @git.ls_files(pattern.gsub(%r{^/}, '')).reject(&whitelist).any?
+      files_for_pattern(pattern).any?
     end
 
     def defined_owner?(file)
