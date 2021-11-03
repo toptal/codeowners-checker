@@ -50,6 +50,7 @@ Example OWNERS:
 GitHub credentials are taken from the following environment variables. You might want to put them into your .bashrc or equivalent:
 
     $ export GITHUB_TOKEN='your GitHub PAT' # your personal access token from GitHub
+    $ export GITHUB_URL='http(s)://[hostname]/api/v3' # If your using GitHub Enterprise Cloud
 
 The Github organization used to retrieve the groups/teams is automatically set according to the git remote URL. You can check and change this value using:
 

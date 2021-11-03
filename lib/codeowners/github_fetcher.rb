@@ -7,7 +7,7 @@ module Codeowners
   # Fetch teams and members from GitHub and return them in list
   class GithubFetcher
     class << self
-      GITHUB_URL = 'https://api.github.com'
+      GITHUB_URL = ENV.fetch('GITHUB_URL', 'https://api.github.com')
 
       # Fetch teams and members from GitHub.
       # authorization_token is GitHub PAT with read:org scope
